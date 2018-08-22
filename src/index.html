@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <title>gsgc2018</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      canvas {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        image-rendering: pixelated;
+      }
+      img {
+        display: none;
+      }
+    </style>
+    <!-- Various components of the game. Order matters. -->
+    <script src="js/shaders.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/gl_utils.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/misc.js"></script>
+    <script src="js/linalg.js"></script>
+    <script src="js/detangle.js"></script>
+  </head>
+  <body onload="setup()">
+    <canvas width="360" height="400" tabindex="1"></canvas>
+    <!-- Sample textures, not part of the final product. -->
+    <!-- <img id="img_floor" src="floor.png"> -->
+  </body>
+</html>
