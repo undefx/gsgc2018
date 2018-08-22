@@ -238,7 +238,9 @@ const getCollisions = (map, layer, row, col) => {
       right = 1;
     }
   }
-  if (layer > 0 && map[layer - 1][row][col] != 0) {
+  const airHere = map[layer][row][col] == 0;
+  const airBelow = map[layer - 1][row][col] == 0;
+  if (layer > 0 && !(airHere && airBelow)) {
     if ([6, 7, 8, 9].includes(map[layer][row][col])) {
       floor = map[layer][row][col];
     } else if ([6, 7, 8, 9].includes(map[layer - 1][row][col])) {
