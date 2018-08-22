@@ -135,7 +135,7 @@ var width = Math.floor(16 / 2) * 2 + 1;
 var layers=3;
 for(var l = 0; l < layers+1; l++){
 	map.blocks.push(newSolidLayer(width, height, 3));
-	map.blocks.push(newMazeLayer(width, height, .1, .35, 4));
+	map.blocks.push(newMazeLayer(width, height, .1, .15, 4));
 }
 map.blocks.push(newSolidLayer(width, height, 1)); //ceiling
 
