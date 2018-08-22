@@ -317,7 +317,6 @@ const setup = () => {
   const canvas = document.getElementsByTagName('canvas')[0];
   const options = {alpha: false, antialias : false};
   const gl = canvas.getContext('webgl', options);
-  gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
   gl.frontFace(gl.CCW);
   gl.cullFace(gl.BACK);
@@ -455,21 +454,16 @@ const setup = () => {
       game.player.fallSpeed = 0;
     }
 
+    // 3d: game world
+    gl.enable(gl.DEPTH_TEST);
     const aspect = canvas.clientWidth / canvas.clientHeight;
     const fov = 1.2 * Math.PI / 2;
-
     let transform = identity();
     transform = matmul(transform, perspective(aspect, fov));
-    //transform = matmul(transform, rotateX(0.01 * 3));
-    //transform = matmul(transform, translate(0, 0, 5 * sin_t(0.8)));
     transform = matmul(transform, translate(0, -0.01, -1));
     transform = matmul(transform, rotate.x(-game.player.altitude));
     transform = matmul(transform, rotate.y(-game.player.direction));
     transform = matmul(transform, translate(-game.player.location.x, -game.player.location.y, -game.player.location.z));
-    //transform = matmul(transform, translate(0.5, 0.5, 0.5));
-    //transform = matmul(transform, rotateZ(0.3));
-    //transform = matmul(transform, scale(0.25));
-
     for (let layer = 0; layer < map.blocks.length; layer++) {
       for (let row = 0; row < map.blocks[0].length; row++) {
         for (let col = 0; col < map.blocks[0][0].length; col++) {
@@ -483,6 +477,9 @@ const setup = () => {
         }
       }
     }
+
+    // 2d: user interface
+    gl.disable(gl.DEPTH_TEST);
   };
 
   requestAnimationFrame(render);
