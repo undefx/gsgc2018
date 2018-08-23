@@ -2,6 +2,66 @@
 
 // Stuff that needs to be detangled. This file should eventually go away.
 
+// Creates a new quad interface object.
+const newQuad = (gl, palette, texture, tex_x_offset, tex_x_num) => {
+  const program = newProgram(gl, 'quad');
+
+  const c = 1;
+  // vertices
+  const positions = [
+    -c, -c, c, -c, c, c,
+    -c, -c, c, c, -c, c,
+  ];
+  const coords = [
+    0, 1, 1, 1, 1, 0,
+    0, 1, 1, 0, 0, 0,
+  ];
+  const positionBuffer = uploadBuffer(gl, positions);
+  const coordsBuffer = uploadBuffer(gl, coords);
+
+  let texTransform = identity();
+  texTransform = matmul(texTransform, translate(tex_x_offset / tex_x_num, 0, 0));
+  texTransform = matmul(texTransform, scale(1 / tex_x_num, 1, 1));
+
+  const render = (gl, transform) => {
+    gl.useProgram(program.program);
+    let id;
+
+    id = program.getUniform('transform');
+    gl.uniformMatrix4fv(id, false, new Float32Array(transform));
+
+    id = program.getUniform('palette');
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, palette);
+    gl.uniform1i(id, 0);
+
+    id = program.getUniform('image');
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.uniform1i(id, 1);
+
+    id = program.getUniform('filter');
+    gl.uniform1f(id, 1);
+
+    id = program.getUniform('texTransform');
+    gl.uniformMatrix4fv(id, false, new Float32Array(texTransform));
+
+    id = program.getAttribute('position');
+    gl.enableVertexAttribArray(id);
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.vertexAttribPointer(id, 2, gl.FLOAT, false, 0, 0);
+
+    id = program.getAttribute('texCoord');
+    gl.enableVertexAttribArray(id);
+    gl.bindBuffer(gl.ARRAY_BUFFER, coordsBuffer);
+    gl.vertexAttribPointer(id, 2, gl.FLOAT, false, 0, 0);
+
+    gl.drawArrays(gl.TRIANGLES, 0, positions.length / 2);
+  };
+
+  return render;
+};
+
 // Creates a new block (cube) game object.
 const newBlock = (gl, palette, texture, flow) => {
   const program = newProgram(gl, 'block');
@@ -342,6 +402,19 @@ const setup = () => {
     //newRamp(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_cinder')), 2),
     //newRamp(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_cinder')), 3),
   ];
+  const glyphs = {};
+  const glyphTexId = uploadTexture(gl, img_text);
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789.,!?-+:/@ ';
+  for (let i = 0; i < alphabet.length; i++) {
+    const quad = newQuad(gl, paletteTexId, glyphTexId, i, alphabet.length);
+    glyphs[alphabet[i]] = quad;
+  }
+  const renderString = (gl, str, transform) => {
+    for (let i = 0; i < str.length; i++) {
+      glyphs[str[i]](gl, transform);
+      transform = matmul(transform, translate(2, 0, 0));
+    }
+  };
 
   canvas.addEventListener('keydown', (e) => {
     if (e.key == 'w') {
@@ -397,7 +470,11 @@ const setup = () => {
     }
   });
 
+  let lastTimestamp = 0, avgLag = 0;
   const render = (timestamp) => {
+    const frameLag = timestamp - lastTimestamp;
+    avgLag = 0.98 * avgLag + 0.02 * frameLag;
+    lastTimestamp = timestamp;
     if (game.input.pointerLocked) {
       requestAnimationFrame(render);
     }
@@ -480,6 +557,12 @@ const setup = () => {
 
     // 2d: user interface
     gl.disable(gl.DEPTH_TEST);
+    transform = identity();
+    transform = matmul(transform, translate(-1, -1, 0));
+    transform = matmul(transform, scale(6 / 360, 24 / 400, 1));
+    transform = matmul(transform, translate(1, 1, 0));
+    const fps = 1 / (avgLag * 0.001);
+    renderString(gl, 'fps: ' + Math.round(fps), transform);
   };
 
   requestAnimationFrame(render);

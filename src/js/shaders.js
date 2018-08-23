@@ -46,5 +46,39 @@ const shaders = {
         gl_FragColor = vec4(rgb2 * u_filter + (1.0 - u_filter) * rgb, 1);
       }
     `,
-  }
+  },
+
+  // The shaders used by interface quads.
+  quad: {
+    vertex: `
+      uniform mat4 u_transform;
+      attribute vec2 a_position;
+      attribute vec2 a_texCoord;
+      varying vec2 v_texCoord;
+
+      void main() {
+        v_texCoord = a_texCoord;
+        gl_Position = u_transform * vec4(a_position, 0, 1);
+      }
+    `,
+    fragment: `
+      precision mediump float;
+
+      uniform sampler2D u_palette;
+      uniform sampler2D u_image;
+      uniform float u_filter;
+      uniform mat4 u_texTransform;
+      varying vec2 v_texCoord;
+
+      void main() {
+        float n = 3.0;
+        vec4 tc = u_texTransform * vec4(v_texCoord, 0, 1);
+        vec3 rgb = texture2D(u_image, tc.xy).rgb;
+        vec3 xyz = floor(rgb * (n - 0.001));
+        float idx = (xyz.x * n * n + xyz.y * n + xyz.z + 0.5) / (n * n * n);
+        vec3 rgb2 = texture2D(u_palette, vec2(idx, 0.5)).rgb;
+        gl_FragColor = vec4(rgb2 * u_filter + (1.0 - u_filter) * rgb, 1);
+      }
+    `,
+  },
 };
