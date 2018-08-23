@@ -117,8 +117,8 @@ const addBlockToMesh = (mesh, dx, dy, dz) => {
 };
 
 // Creates a new static mesh renderer.
-const newMeshRenderer = (gl, mesh, name) => {
-  const program = newProgram(gl, name);
+const newMeshRenderer = (gl, mesh) => {
+  const program = mesh.program;
   const vertexBuffer = uploadBuffer(gl, mesh.vertices);
   const texCoordBuffer = uploadBuffer(gl, mesh.texCoords);
 
@@ -522,7 +522,9 @@ const setup = () => {
   });
 
   // Build a static mesh for each block type.
+  const blockProgram = newProgram(gl, 'block');
   const newBlockType = (textureId) => ({
+    program: blockProgram,
     palette: paletteTexId,
     texture: textureId,
     filter: 1,
@@ -551,12 +553,9 @@ const setup = () => {
       }
     }
   }
-  staticMeshes[1].render = newMeshRenderer(gl, staticMeshes[1], 'block');
-  staticMeshes[3].render = newMeshRenderer(gl, staticMeshes[3], 'block');
-  staticMeshes[4].render = newMeshRenderer(gl, staticMeshes[4], 'block');
-  console.log('map dimens:', map.blocks.length, map.blocks[0].length, map.blocks[0][0].length);
-  //console.log(staticMeshes);
-  //console.log(stragglers);
+  Object.getOwnPropertyNames(staticMeshes).forEach((name) => {
+    staticMeshes[name].render = newMeshRenderer(gl, staticMeshes[name]);
+  });
 
   let lastTimestamp = 0, avgLag = 0;
   const render = (timestamp) => {
@@ -629,24 +628,10 @@ const setup = () => {
     transform = matmul(transform, rotate.x(-game.player.altitude));
     transform = matmul(transform, rotate.y(-game.player.direction));
     transform = matmul(transform, translate(-game.player.location.x, -game.player.location.y, -game.player.location.z));
-    //for (let layer = 0; layer < map.blocks.length; layer++) {
-    //  for (let row = 0; row < map.blocks[0].length; row++) {
-    //    for (let col = 0; col < map.blocks[0][0].length; col++) {
-    //      if (map.blocks[layer][row][col] == 0) {
-    //        continue;
-    //      }
-    //      const idx = map.blocks[layer][row][col] - 1;
-    //      const l = layer;
-    //      const r = row;
-    //      if (idx != 3) {
-    //        blocks[idx](gl, matmul(transform, translate(col, l, r)), timestamp);
-    //      }
-    //    }
-    //  }
-    //}
-    staticMeshes[1].render(transform);
-    staticMeshes[3].render(transform);
-    staticMeshes[4].render(transform);
+
+    Object.getOwnPropertyNames(staticMeshes).forEach((name) => {
+      staticMeshes[name].render(transform);
+    });
     stragglers.forEach((s) => {
       const render = s[0];
       const [x, y, z] = s[1];
