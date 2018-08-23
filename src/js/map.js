@@ -132,10 +132,10 @@ function newSolidLayer(shape1, shape0, blockType){
 // Only odd shapes (not sure why)
 var height = Math.floor(16 / 2) * 2 + 1;
 var width = Math.floor(16 / 2) * 2 + 1;
-var layers=3;
+var layers = 7;
 for(var l = 0; l < layers+1; l++){
 	map.blocks.push(newSolidLayer(width, height, 3));
-	map.blocks.push(newMazeLayer(width, height, .1, .15, 4));
+	map.blocks.push(newMazeLayer(width, height, 0.1, 0.15, 4));
 }
 map.blocks.push(newSolidLayer(width, height, 1)); //ceiling
 
@@ -145,13 +145,13 @@ for(var k = 1; k < layers*2-1; k+=2){
 		for(var w = 0; w < width; w++){
 			//make lofts
 			if(map.blocks[k][h][w] == 0 && map.blocks[k+2][h][w] == 0){
-				//both layers are empty here, see if theres enough space to remove the 
+				//both layers are empty here, see if theres enough space to remove the
 				//floor without making the upper layer unpassable here
 				if((h > 1 && map.blocks[k+2][h-1][w] == 0) &&
 					(h < height-1 && map.blocks[k+2][h+1][w] == 0) &&
 					(w > 1 && map.blocks[k+2][h][w-1] == 0) &&
 					(w < width-1 && map.blocks[k+2][h][w+1] == 0))
-						map.blocks[k+1][h][w] = 0;				
+						map.blocks[k+1][h][w] = 0;
 			}
 			//try to add ramps.  The idea is to try to find walls on this layer that could be changed to a ramp
 			//which leads to an empty space in the layer above, and with a floor at the top of the ramp.
@@ -190,4 +190,3 @@ for(var k = 1; k < layers*2-1; k+=2){
 	}
 	console.log(k + ' has ' + rampCount + ' ramps');
 }
-

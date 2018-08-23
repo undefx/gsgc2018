@@ -62,6 +62,100 @@ const newQuad = (gl, palette, texture, tex_x_offset, tex_x_num) => {
   return render;
 };
 
+// Adds a new block (cube) to a static mesh.
+const addBlockToMesh = (mesh, dx, dy, dz) => {
+  // vertices
+  const vRUF = [dx + 1, dy + 1, dz];
+  const vRUB = [dx + 1, dy + 1, dz + 1];
+  const vRDF = [dx + 1, dy, dz];
+  const vRDB = [dx + 1, dy, dz + 1];
+  const vLUF = [dx, dy + 1, dz];
+  const vLUB = [dx, dy + 1, dz + 1];
+  const vLDF = [dx, dy, dz];
+  const vLDB = [dx, dy, dz + 1];
+
+  flatten([
+    // front
+    vLDF, vRUF, vLUF,
+    vLDF, vRDF, vRUF,
+    // right
+    vRDF, vRUB, vRUF,
+    vRDF, vRDB, vRUB,
+    // back
+    vRDB, vLUB, vRUB,
+    vRDB, vLDB, vLUB,
+    // left
+    vLDB, vLUF, vLUB,
+    vLDB, vLDF, vLUF,
+    // top
+    vLUF, vRUB, vLUB,
+    vLUF, vRUF, vRUB,
+    // bottom
+    vLDF, vRDB, vRDF,
+    vLDF, vLDB, vRDB,
+  ]).forEach(e => mesh.vertices.push(e));
+  [
+    // front
+    0, 0, 1, 1, 0, 1,
+    0, 0, 1, 0, 1, 1,
+    // right
+    0, 0, 1, 1, 0, 1,
+    0, 0, 1, 0, 1, 1,
+    // back
+    0, 0, 1, 1, 0, 1,
+    0, 0, 1, 0, 1, 1,
+    // left
+    0, 0, 1, 1, 0, 1,
+    0, 0, 1, 0, 1, 1,
+    // top
+    0, 0, 1, 1, 0, 1,
+    0, 0, 1, 0, 1, 1,
+    // bottom
+    0, 0, 1, 1, 0, 1,
+    0, 0, 1, 0, 1, 1,
+  ].forEach(e => mesh.texCoords.push(e));
+};
+
+// Creates a new static mesh renderer.
+const newMeshRenderer = (gl, mesh, name) => {
+  const program = newProgram(gl, name);
+  const vertexBuffer = uploadBuffer(gl, mesh.vertices);
+  const texCoordBuffer = uploadBuffer(gl, mesh.texCoords);
+
+  return (transform) => {
+    let id;
+    gl.useProgram(program.program);
+
+    id = program.getUniform('transform');
+    gl.uniformMatrix4fv(id, false, new Float32Array(transform));
+
+    id = program.getUniform('palette');
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, mesh.palette);
+    gl.uniform1i(id, 0);
+
+    id = program.getUniform('image');
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, mesh.texture);
+    gl.uniform1i(id, 1);
+
+    id = program.getUniform('filter');
+    gl.uniform1f(id, mesh.filter);
+
+    id = program.getAttribute('position');
+    gl.enableVertexAttribArray(id);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.vertexAttribPointer(id, 3, gl.FLOAT, false, 0, 0);
+
+    id = program.getAttribute('texCoord');
+    gl.enableVertexAttribArray(id);
+    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+    gl.vertexAttribPointer(id, 2, gl.FLOAT, false, 0, 0);
+
+    gl.drawArrays(gl.TRIANGLES, 0, mesh.vertices.length / 3);
+  };
+};
+
 // Creates a new block (cube) game object.
 const newBlock = (gl, palette, texture) => {
   const program = newProgram(gl, 'block');
@@ -349,10 +443,10 @@ const setup = () => {
 
   const paletteTexId = uploadTexture(gl, paletteTexture());
   const blocks = [
-    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0, 0))),
+    null, //newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0, 0))),
     null,
-    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.4))),
-    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7))),
+    null, //newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.4))),
+    null, // newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7))),
     null,
     newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 0),
     newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 1),
@@ -427,6 +521,43 @@ const setup = () => {
     }
   });
 
+  // Build a static mesh for each block type.
+  const newBlockType = (textureId) => ({
+    palette: paletteTexId,
+    texture: textureId,
+    filter: 1,
+    vertices: [],
+    texCoords: [],
+    render: null,
+  });
+  const staticMeshes = {
+    // Ceiling
+    1: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0, 0))),
+    // Floors
+    3: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.4))),
+    // Walls
+    4: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7))),
+  };
+  const stragglers = [];
+  for (let layer = 0; layer < map.blocks.length; layer++) {
+    for (let row = 0; row < map.blocks[0].length; row++) {
+      for (let col = 0; col < map.blocks[0][0].length; col++) {
+        const idx = map.blocks[layer][row][col];
+        if (staticMeshes.hasOwnProperty(idx)) {
+          addBlockToMesh(staticMeshes[idx], col, layer, row);
+        } else if (idx != 0) {
+          stragglers.push([blocks[idx - 1], [col, layer, row]]);
+        }
+      }
+    }
+  }
+  staticMeshes[1].render = newMeshRenderer(gl, staticMeshes[1], 'block');
+  staticMeshes[3].render = newMeshRenderer(gl, staticMeshes[3], 'block');
+  staticMeshes[4].render = newMeshRenderer(gl, staticMeshes[4], 'block');
+  console.log('map dimens:', map.blocks.length, map.blocks[0].length, map.blocks[0][0].length);
+  //console.log(staticMeshes);
+  //console.log(stragglers);
+
   let lastTimestamp = 0, avgLag = 0;
   const render = (timestamp) => {
     const frameLag = timestamp - lastTimestamp;
@@ -498,19 +629,29 @@ const setup = () => {
     transform = matmul(transform, rotate.x(-game.player.altitude));
     transform = matmul(transform, rotate.y(-game.player.direction));
     transform = matmul(transform, translate(-game.player.location.x, -game.player.location.y, -game.player.location.z));
-    for (let layer = 0; layer < map.blocks.length; layer++) {
-      for (let row = 0; row < map.blocks[0].length; row++) {
-        for (let col = 0; col < map.blocks[0][0].length; col++) {
-          if (map.blocks[layer][row][col] == 0) {
-            continue;
-          }
-          const idx = map.blocks[layer][row][col] - 1;
-          const l = layer;
-          const r = row;
-          blocks[idx](gl, matmul(transform, translate(col, l, r)), timestamp);
-        }
-      }
-    }
+    //for (let layer = 0; layer < map.blocks.length; layer++) {
+    //  for (let row = 0; row < map.blocks[0].length; row++) {
+    //    for (let col = 0; col < map.blocks[0][0].length; col++) {
+    //      if (map.blocks[layer][row][col] == 0) {
+    //        continue;
+    //      }
+    //      const idx = map.blocks[layer][row][col] - 1;
+    //      const l = layer;
+    //      const r = row;
+    //      if (idx != 3) {
+    //        blocks[idx](gl, matmul(transform, translate(col, l, r)), timestamp);
+    //      }
+    //    }
+    //  }
+    //}
+    staticMeshes[1].render(transform);
+    staticMeshes[3].render(transform);
+    staticMeshes[4].render(transform);
+    stragglers.forEach((s) => {
+      const render = s[0];
+      const [x, y, z] = s[1];
+      render(gl, translate(x, y, z), timestamp);
+    });
 
     // 2d: user interface
     gl.disable(gl.DEPTH_TEST);
