@@ -650,7 +650,7 @@ const setup = () => {
     stragglers.forEach((s) => {
       const render = s[0];
       const [x, y, z] = s[1];
-      render(gl, translate(x, y, z), timestamp);
+      render(gl, matmul(transform, translate(x, y, z)), timestamp);
     });
 
     // 2d: user interface
