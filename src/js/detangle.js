@@ -63,7 +63,7 @@ const newQuad = (gl, palette, texture, tex_x_offset, tex_x_num) => {
 };
 
 // Creates a new block (cube) game object.
-const newBlock = (gl, palette, texture, flow) => {
+const newBlock = (gl, palette, texture) => {
   const program = newProgram(gl, 'block');
 
   // vertices
@@ -117,29 +117,8 @@ const newBlock = (gl, palette, texture, flow) => {
     0, 0, 1, 1, 0, 1,
     0, 0, 1, 0, 1, 1,
   ];
-  const normals = [
-    // front
-    0, 0, 1, 0, 0, 1, 0, 0, 1,
-    0, 0, 1, 0, 0, 1, 0, 0, 1,
-    // right
-    1, 0, 0, 1, 0, 0, 1, 0, 0,
-    1, 0, 0, 1, 0, 0, 1, 0, 0,
-    // back
-    0, 0, -1, 0, 0, -1, 0, 0, -1,
-    0, 0, -1, 0, 0, -1, 0, 0, -1,
-    // left
-    -1, 0, 0, -1, 0, 0, -1, 0, 0,
-    -1, 0, 0, -1, 0, 0, -1, 0, 0,
-    // top
-    0, 1, 0, 0, 1, 0, 0, 1, 0,
-    0, 1, 0, 0, 1, 0, 0, 1, 0,
-    // bottom
-    0, -1, 0, 0, -1, 0, 0, -1, 0,
-    0, -1, 0, 0, -1, 0, 0, -1, 0,
-  ];
   const positionBuffer = uploadBuffer(gl, positions);
   const coordsBuffer = uploadBuffer(gl, coords);
-  const normalBuffer = uploadBuffer(gl, normals);
   const shift = translate(c, c, c);
 
   const render = (gl, transform, timestamp) => {
@@ -162,14 +141,6 @@ const newBlock = (gl, palette, texture, flow) => {
     id = program.getUniform('filter');
     gl.uniform1f(id, 1);
 
-    if (flow) {
-      id = program.getUniform('texCoordOffset');
-      const sec = timestamp * 0.001;
-      const dx = 3 * Math.sin(sec * 0.1);
-      const dy = 2 * Math.cos(sec * 0.05);
-      gl.uniform2f(id, dx, dy);
-    }
-
     id = program.getAttribute('position');
     gl.enableVertexAttribArray(id);
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -179,11 +150,6 @@ const newBlock = (gl, palette, texture, flow) => {
     gl.enableVertexAttribArray(id);
     gl.bindBuffer(gl.ARRAY_BUFFER, coordsBuffer);
     gl.vertexAttribPointer(id, 2, gl.FLOAT, false, 0, 0);
-
-    //id = program.getAttribute('normal');
-    //gl.enableVertexAttribArray(id);
-    //gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-    //gl.vertexAttribPointer(id, 3, gl.FLOAT, false, 0, 0);
 
     gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3);
   };
@@ -383,24 +349,15 @@ const setup = () => {
 
   const paletteTexId = uploadTexture(gl, paletteTexture());
   const blocks = [
-    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0, 0)), true),
-    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7)), false),
-    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.4)), false),
-    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7)), false),
-    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7)), false),
-    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7)), 0),
-    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7)), 1),
-    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7)), 2),
-    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7)), 3),
-    //newBlock(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_cloud')), true),
-    //newBlock(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_cinder')), false),
-    //newBlock(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_floor')), false),
-    //newBlock(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_cinder')), false),
-    //newBlock(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_cinder')), false),
-    //newRamp(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_cinder')), 0),
-    //newRamp(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_cinder')), 1),
-    //newRamp(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_cinder')), 2),
-    //newRamp(gl, paletteTexId, uploadTexture(gl, document.getElementById('img_cinder')), 3),
+    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0, 0))),
+    null,
+    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.4))),
+    newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7))),
+    null,
+    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 0),
+    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 1),
+    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 2),
+    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 3),
   ];
   const glyphs = {};
   const glyphTexId = uploadTexture(gl, img_text);
