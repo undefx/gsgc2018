@@ -18,59 +18,7 @@ const map = {
   // playable area. The map is indexed by "layer" (y-axis), "row" (z-axis), and
   // "col" (x-axis).
   // TODO: numbers shouldn't be hard-coded
-  // TODO: shouldn't be necessary to exhaustively list each block
   blocks: [],
-  // [[
-    // [3, 3, 3, 3, 3, 3, 3, 3, 3],
-    // [3, 3, 3, 3, 3, 3, 3, 3, 3],
-    // [3, 3, 3, 3, 3, 3, 3, 3, 3],
-    // [3, 3, 3, 3, 3, 3, 3, 3, 3],
-    // [3, 3, 3, 3, 3, 3, 3, 3, 3],
-    // [3, 3, 3, 3, 3, 3, 3, 3, 3],
-    // [3, 3, 3, 3, 3, 3, 3, 3, 3],
-    // [3, 3, 3, 3, 3, 3, 3, 3, 3],
-    // [3, 3, 3, 3, 3, 3, 3, 3, 3],
-  // ], [
-    // [4, 4, 4, 4, 4, 4, 4, 4, 4],
-    // [4, 0, 0, 0, 0, 0, 0, 0, 4],
-    // [4, 0, 0, 0, 0, 0, 0, 0, 4],
-    // [4, 0, 0, 0, 0, 0, 0, 0, 4],
-    // [4, 0, 0, 0, 0, 0, 0, 0, 4],
-    // [4, 0, 0, 0, 0, 0, 0, 0, 4],
-    // [4, 0, 0, 4, 6, 4, 0, 0, 4],
-    // [4, 0, 0, 4, 4, 4, 0, 0, 4],
-    // [4, 4, 4, 4, 4, 4, 4, 4, 4],
-  // ], [
-    // [2, 2, 2, 2, 2, 2, 2, 2, 2],
-    // [2, 2, 2, 2, 2, 2, 2, 2, 2],
-    // [2, 2, 2, 2, 2, 2, 2, 2, 2],
-    // [2, 2, 2, 0, 0, 0, 2, 2, 2],
-    // [2, 2, 2, 0, 0, 0, 2, 2, 2],
-    // [2, 2, 2, 0, 0, 0, 2, 2, 2],
-    // [2, 2, 2, 2, 0, 2, 2, 2, 2],
-    // [2, 2, 2, 7, 0, 9, 2, 2, 2],
-    // [2, 2, 2, 2, 2, 2, 2, 2, 2],
-  // ], [
-    // [5, 5, 5, 5, 5, 5, 5, 5, 5],
-    // [5, 0, 0, 0, 0, 0, 0, 0, 5],
-    // [5, 0, 5, 5, 0, 5, 5, 0, 5],
-    // [5, 0, 5, 0, 0, 0, 5, 0, 5],
-    // [5, 0, 0, 0, 0, 0, 0, 0, 5],
-    // [5, 0, 5, 0, 0, 0, 5, 0, 5],
-    // [5, 0, 5, 5, 0, 5, 5, 0, 5],
-    // [5, 0, 0, 0, 0, 0, 0, 0, 5],
-    // [5, 5, 5, 5, 5, 5, 5, 5, 5],
-  // ], [
-    // [1, 1, 1, 1, 1, 1, 1, 1, 1],
-    // [1, 1, 1, 1, 1, 1, 1, 1, 1],
-    // [1, 1, 1, 1, 1, 1, 1, 1, 1],
-    // [1, 1, 1, 1, 1, 1, 1, 1, 1],
-    // [1, 1, 1, 1, 1, 1, 1, 1, 1],
-    // [1, 1, 1, 1, 1, 1, 1, 1, 1],
-    // [1, 1, 1, 1, 1, 1, 1, 1, 1],
-    // [1, 1, 1, 1, 1, 1, 1, 1, 1],
-    // [1, 1, 1, 1, 1, 1, 1, 1, 1],
-  // ]],
 };
 
 function rand(min, max){
@@ -129,9 +77,20 @@ function newSolidLayer(shape1, shape0, blockType){
 	return Z;
 }
 
-// Only odd shapes (not sure why)
-var height = Math.floor(16 / 2) * 2 + 1;
-var width = Math.floor(16 / 2) * 2 + 1;
+function makeRamp(k, h0, w0, hw0, hwlim0, gt0, h1, w1, hw1, hwlim1, gt1, h2, w2, h3, w3, rn, rnlim, ramp){
+	if(map.blocks[k][h0][w0] != 0 && ((gt0 && hw0 > hwlim0) || (!gt0 && hw0 < hwlim0)) && 
+			map.blocks[k][h1][w1] == 0 && ((gt1 && hw1 > hwlim1) || (!gt1 && hw1 < hwlim1)) && 
+			map.blocks[k+2][h2][w2] == 0 && map.blocks[k+2][h3][w3] == 0 && rn < rnlim){
+		map.blocks[k][h0][w0] = ramp;
+		map.blocks[k+1][h0][w0] = 0;
+		map.blocks[k+1][h2][w2] = ramp;
+		return true;
+	}
+	return false;
+}
+
+var height = 16;
+var width = 16;
 var layers = 7;
 for(var l = 0; l < layers+1; l++){
 	map.blocks.push(newSolidLayer(width, height, 3));
@@ -145,8 +104,6 @@ for(var k = 1; k < layers*2-1; k+=2){
 		for(var w = 0; w < width; w++){
 			//make lofts
 			if(map.blocks[k][h][w] == 0 && map.blocks[k+2][h][w] == 0){
-				//both layers are empty here, see if theres enough space to remove the
-				//floor without making the upper layer unpassable here
 				if((h > 1 && map.blocks[k+2][h-1][w] == 0) &&
 					(h < height-1 && map.blocks[k+2][h+1][w] == 0) &&
 					(w > 1 && map.blocks[k+2][h][w-1] == 0) &&
@@ -157,36 +114,12 @@ for(var k = 1; k < layers*2-1; k+=2){
 			//which leads to an empty space in the layer above, and with a floor at the top of the ramp.
 			//the random is a hacky way to make sure the first ifs don't make the most ramps.
 			var rn = Math.random();
-			//south
-			if(rampCount < 4 && map.blocks[k][h][w] != 0 && h-1 > 1 && map.blocks[k][h-1][w] == 0 &&
-					h+2 < height-1 && map.blocks[k+2][h+1][w] == 0 && map.blocks[k+2][h+2][w] == 0 && rn < .1){
-				map.blocks[k][h][w] = 6;
-				map.blocks[k+1][h][w] = 0;
-				map.blocks[k+1][h+1][w] = 6;
+			if(makeRamp(k, h, w, h-1, 1, true, h-1, w, h+2, height-1, false, h+1, w, h+2, w, rn, .1, 6) ||
+				makeRamp(k, h, w, h+1, height-1, false, h+1, w, h-2, 1, true, h-1, w, h-2, w, rn, .2, 8) ||
+				makeRamp(k, h, w, w-1, 1, true, h, w-1, w+2, width-1, false, h, w+1, h, w+2, rn, .3, 9) || 
+				makeRamp(k, h, w, w+1, width-1, false, h, w+1, w-2, 1, true, h, w-1, h, w-2, rn, .4, 7))
 				rampCount++;
-			}//north
-			else if(rampCount < 4 && map.blocks[k][h][w] != 0 && h+1 < height-1 && map.blocks[k][h+1][w]== 0 &&
-					h-2 > 1 && map.blocks[k+2][h-1][w] == 0 && map.blocks[k+2][h-2][w] == 0 && rn < .2){
-				map.blocks[k][h][w] = 8;
-				map.blocks[k+1][h][w] = 0;
-				map.blocks[k+1][h-1][w] = 8;
-				rampCount++;
-			}//east
-			else if(rampCount < 4 && map.blocks[k][h][w] != 0 && w-1 > 1 && map.blocks[k][h][w-1] == 0 &&
-					w+2 < width-1 && map.blocks[k+2][h][w+1] == 0 && map.blocks[k+2][h][w+2] == 0 && rn < .3){
-				map.blocks[k][h][w] = 9;
-				map.blocks[k+1][h][w] = 0;
-				map.blocks[k+1][h][w+1] = 9;
-				rampCount++;
-			}//west
-			else if(rampCount < 4 && map.blocks[k][h][w] != 0 && w+1 < width-1 && map.blocks[k][h][w+1] == 0 &&
-					w-2 > 1 && map.blocks[k+2][h][w-1] == 0 && map.blocks[k+2][h][w-2] == 0 && rn < .4){
-				map.blocks[k][h][w] = 7;
-				map.blocks[k+1][h][w] = 0;
-				map.blocks[k+1][h][w-1] = 7;
-				rampCount++;
-			}
+			if(rampCount >= 4) break;
 		}
 	}
-	console.log(k + ' has ' + rampCount + ' ramps');
 }
