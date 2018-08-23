@@ -159,28 +159,28 @@ for(var k = 1; k < layers*2-1; k+=2){
 			var rn = Math.random();
 			//south
 			if(rampCount < 4 && map.blocks[k][h][w] != 0 && h-1 > 1 && map.blocks[k][h-1][w] == 0 &&
-					h+2 < height-1 && map.blocks[k+2][h+1][w] == 0 && map.blocks[k+2][h+2][w] != 0 && rn < .25){
+					h+2 < height-1 && map.blocks[k+2][h+1][w] == 0 && map.blocks[k+2][h+2][w] == 0 && rn < .1){
 				map.blocks[k][h][w] = 6;
 				map.blocks[k+1][h][w] = 0;
 				map.blocks[k+1][h+1][w] = 6;
 				rampCount++;
 			}//north
 			else if(rampCount < 4 && map.blocks[k][h][w] != 0 && h+1 < height-1 && map.blocks[k][h+1][w]== 0 &&
-					h-2 > 1 && map.blocks[k+2][h-1][w] == 0 && map.blocks[k+2][h-2][w] != 0 && rn < .5){
+					h-2 > 1 && map.blocks[k+2][h-1][w] == 0 && map.blocks[k+2][h-2][w] == 0 && rn < .2){
 				map.blocks[k][h][w] = 8;
 				map.blocks[k+1][h][w] = 0;
 				map.blocks[k+1][h-1][w] = 8;
 				rampCount++;
 			}//east
 			else if(rampCount < 4 && map.blocks[k][h][w] != 0 && w-1 > 1 && map.blocks[k][h][w-1] == 0 &&
-					w+2 < width-1 && map.blocks[k+2][h][w+1] == 0 && map.blocks[k+2][h][w+2] != 0 && rn < .75){
+					w+2 < width-1 && map.blocks[k+2][h][w+1] == 0 && map.blocks[k+2][h][w+2] == 0 && rn < .3){
 				map.blocks[k][h][w] = 9;
 				map.blocks[k+1][h][w] = 0;
 				map.blocks[k+1][h][w+1] = 9;
 				rampCount++;
 			}//west
 			else if(rampCount < 4 && map.blocks[k][h][w] != 0 && w+1 < width-1 && map.blocks[k][h][w+1] == 0 &&
-					w-2 > 1 && map.blocks[k+2][h][w-1] == 0 && map.blocks[k+2][h][w-2] != 0){
+					w-2 > 1 && map.blocks[k+2][h][w-1] == 0 && map.blocks[k+2][h][w-2] == 0 && rn < .4){
 				map.blocks[k][h][w] = 7;
 				map.blocks[k+1][h][w] = 0;
 				map.blocks[k+1][h][w-1] = 7;
