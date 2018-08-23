@@ -135,7 +135,7 @@ var width = Math.floor(16 / 2) * 2 + 1;
 var layers=3;
 for(var l = 0; l < layers+1; l++){
 	map.blocks.push(newSolidLayer(width, height, 3));
-	map.blocks.push(newMazeLayer(width, height, .25, .25, 4));
+	map.blocks.push(newMazeLayer(width, height, .1, .15, 4));
 }
 map.blocks.push(newSolidLayer(width, height, 1)); //ceiling
 
@@ -158,28 +158,28 @@ for(var k = 1; k < layers*2-1; k+=2){
 			//the random is a hacky way to make sure the first ifs don't make the most ramps.
 			var rn = Math.random();
 			//south
-			if(rampCount < 10 && map.blocks[k][h][w] != 0 && h-1 > 1 && map.blocks[k][h-1][w] == 0 &&
+			if(rampCount < 4 && map.blocks[k][h][w] != 0 && h-1 > 1 && map.blocks[k][h-1][w] == 0 &&
 					h+2 < height-1 && map.blocks[k+2][h+1][w] == 0 && map.blocks[k+2][h+2][w] != 0 && rn < .25){
 				map.blocks[k][h][w] = 6;
 				map.blocks[k+1][h][w] = 0;
 				map.blocks[k+1][h+1][w] = 6;
 				rampCount++;
 			}//north
-			else if(rampCount < 10 && map.blocks[k][h][w] != 0 && h+1 < height-1 && map.blocks[k][h+1][w]== 0 &&
+			else if(rampCount < 4 && map.blocks[k][h][w] != 0 && h+1 < height-1 && map.blocks[k][h+1][w]== 0 &&
 					h-2 > 1 && map.blocks[k+2][h-1][w] == 0 && map.blocks[k+2][h-2][w] != 0 && rn < .5){
 				map.blocks[k][h][w] = 8;
 				map.blocks[k+1][h][w] = 0;
 				map.blocks[k+1][h-1][w] = 8;
 				rampCount++;
 			}//east
-			else if(rampCount < 10 && map.blocks[k][h][w] != 0 && w-1 > 1 && map.blocks[k][h][w-1] == 0 &&
+			else if(rampCount < 4 && map.blocks[k][h][w] != 0 && w-1 > 1 && map.blocks[k][h][w-1] == 0 &&
 					w+2 < width-1 && map.blocks[k+2][h][w+1] == 0 && map.blocks[k+2][h][w+2] != 0 && rn < .75){
 				map.blocks[k][h][w] = 9;
 				map.blocks[k+1][h][w] = 0;
 				map.blocks[k+1][h][w+1] = 9;
 				rampCount++;
 			}//west
-			else if(rampCount < 10 && map.blocks[k][h][w] != 0 && w+1 < width-1 && map.blocks[k][h][w+1] == 0 &&
+			else if(rampCount < 4 && map.blocks[k][h][w] != 0 && w+1 < width-1 && map.blocks[k][h][w+1] == 0 &&
 					w-2 > 1 && map.blocks[k+2][h][w-1] == 0 && map.blocks[k+2][h][w-2] != 0){
 				map.blocks[k][h][w] = 7;
 				map.blocks[k+1][h][w] = 0;
