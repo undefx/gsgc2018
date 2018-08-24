@@ -149,105 +149,6 @@ const newMeshRenderer = (gl, mesh) => {
   };
 };
 
-// Computes movement collisions at the given player location.
-// TODO: the idea is good enough, but the implementation is extra hacky
-const getCollisions = (map, layer, row, col) => {
-  let left = 0, right = 0, up = 0, down = 0, floor = 0;
-  if (row > 0 && map[layer][row - 1][col] != 0) {
-    if (map[layer][row - 1][col] != 8) {
-      up = 1;
-    }
-  }
-  if (row < map[0].length - 1 && map[layer][row + 1][col] != 0) {
-    if (map[layer][row + 1][col] != 6) {
-      down = 1;
-    }
-  }
-  if (col > 0 && map[layer][row][col - 1] != 0) {
-    if (map[layer][row][col - 1] != 7) {
-      left = 1;
-    }
-  }
-  if (col < map[0][0].length - 1 && map[layer][row][col + 1] != 0) {
-    if (map[layer][row][col + 1] != 9) {
-      right = 1;
-    }
-  }
-  const airHere = map[layer][row][col] == 0;
-  const airBelow = map[layer - 1][row][col] == 0;
-  if (layer > 0 && !(airHere && airBelow)) {
-    if ([6, 7, 8, 9].includes(map[layer][row][col])) {
-      floor = map[layer][row][col];
-    } else if ([6, 7, 8, 9].includes(map[layer - 1][row][col])) {
-      floor = -map[layer - 1][row][col];
-    } else {
-      floor = 1;
-    }
-  }
-  return [up, down, left, right, floor];
-};
-
-const getPosition = (x, a, b) => {
-  if (x < 0.25) {
-    return a * 0.25 + (1 - a) * x;
-  }
-  if (x >= 0.75) {
-    return b * 0.75 + (1 - b) * x;
-  }
-  return x;
-};
-
-const getPositionY = (x, z, y, type) => {
-  if (type == 6) {
-    return z + 0.5;
-  }
-  if (type == -6) {
-    return z - 0.5;
-  }
-  if (type == 8) {
-    return (1 - z) + 0.5;
-  }
-  if (type == -8) {
-    return (1 - z) - 0.5;
-  }
-  if (type == 7) {
-    return (1 - x) + 0.5;
-  }
-  if (type == -7) {
-    return (1 - x) - 0.5;
-  }
-  if (type == 9) {
-    return x + 0.5;
-  }
-  if (type == -9) {
-    return x - 0.5;
-  }
-  if (type == 0) {
-    return y;
-  }
-  return Math.max(y, 0.5);
-};
-
-const game = {
-  player: {
-    location: {
-      x: map.start_position.x,
-      y: map.start_position.y,
-      z: map.start_position.z,
-    },
-    direction: map.start_direction,
-    altitude: 0,
-    fallSpeed: 0,
-  },
-  input: {
-    forward: false,
-    backward: false,
-    left: false,
-    right: false,
-    pointerLocked: false,
-  }
-};
-
 const setup = () => {
   const canvas = document.getElementsByTagName('canvas')[0];
   const options = {alpha: false, antialias : false};
@@ -273,32 +174,34 @@ const setup = () => {
     }
   };
 
+  const game = newGame();
+
   canvas.addEventListener('keydown', (e) => {
     if (e.key == 'w') {
-      game.input.forward = true;
+      game.state.input.forward = true;
     }
     if (e.key == 'a') {
-      game.input.left = true;
+      game.state.input.left = true;
     }
     if (e.key == 's') {
-      game.input.backward = true;
+      game.state.input.backward = true;
     }
     if (e.key == 'd') {
-      game.input.right = true;
+      game.state.input.right = true;
     }
   });
   canvas.addEventListener('keyup', (e) => {
     if (e.key == 'w') {
-      game.input.forward = false;
+      game.state.input.forward = false;
     }
     if (e.key == 'a') {
-      game.input.left = false;
+      game.state.input.left = false;
     }
     if (e.key == 's') {
-      game.input.backward = false;
+      game.state.input.backward = false;
     }
     if (e.key == 'd') {
-      game.input.right = false;
+      game.state.input.right = false;
     }
   });
   canvas.onclick = function() {
@@ -306,24 +209,24 @@ const setup = () => {
   };
   document.addEventListener('pointerlockchange', () => {
     const isLocked = document.pointerLockElement === canvas;
-    if (!game.input.pointerLocked && isLocked) {
-      game.input.pointerLocked = document.pointerLockElement === canvas;
-      if (game.input.pointerLocked) {
+    if (!game.state.input.pointerLocked && isLocked) {
+      game.state.input.pointerLocked = document.pointerLockElement === canvas;
+      if (game.state.input.pointerLocked) {
         requestAnimationFrame(render);
         playNote(440);
       }
     } else if (!isLocked) {
-      game.input.pointerLocked = false;
+      game.state.input.pointerLocked = false;
       playNote(420);
     }
   });
   const mouseSensitivity = 0.0015;
   canvas.addEventListener('mousemove', (e) => {
-    if (game.input.pointerLocked) {
-      game.player.direction += e.movementX * mouseSensitivity;
-      game.player.altitude -= e.movementY * mouseSensitivity;
-      game.player.altitude = Math.min(game.player.altitude, +Math.PI / 2);
-      game.player.altitude = Math.max(game.player.altitude, -Math.PI / 2);
+    if (game.state.input.pointerLocked) {
+      game.state.player.direction += e.movementX * mouseSensitivity;
+      game.state.player.altitude -= e.movementY * mouseSensitivity;
+      game.state.player.altitude = Math.min(game.state.player.altitude, +Math.PI / 2);
+      game.state.player.altitude = Math.max(game.state.player.altitude, -Math.PI / 2);
     }
   });
 
@@ -374,64 +277,18 @@ const setup = () => {
 
   let lastTimestamp = 0, avgLag = 0;
   const render = (timestamp) => {
+    if (game.state.input.pointerLocked) {
+      requestAnimationFrame(render);
+    }
+    game.update(timestamp);
+
     const frameLag = timestamp - lastTimestamp;
     avgLag = 0.98 * avgLag + 0.02 * frameLag;
     lastTimestamp = timestamp;
-    if (game.input.pointerLocked) {
-      requestAnimationFrame(render);
-    }
+
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clearColor(1, 1, 1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    const sec_rad = timestamp * 0.001 * Math.PI * 2;
-    const sin_t = (x) => {return Math.sin(x * sec_rad);};
-    const cos_t = (x) => {return Math.cos(x * sec_rad);};
-
-    const moveSpeed = 0.04;
-    const strafe = 0.8;
-    game.player.fallSpeed += 0.002;
-    let dx = 0, dy = -game.player.fallSpeed, dz = 0;
-    if (game.input.forward) {
-      const theta = game.player.direction;
-      dz += moveSpeed * Math.cos(theta);
-      dx += moveSpeed * Math.sin(theta);
-    }
-    if (game.input.backward) {
-      const theta = game.player.direction + Math.PI;
-      dz += moveSpeed * Math.cos(theta);
-      dx += moveSpeed * Math.sin(theta);
-    }
-    if (game.input.left) {
-      const theta = game.player.direction + Math.PI * 1.5;
-      dz += strafe * moveSpeed * Math.cos(theta);
-      dx += strafe * moveSpeed * Math.sin(theta);
-    }
-    if (game.input.right) {
-      const theta = game.player.direction + Math.PI * 0.5;
-      dz += strafe * moveSpeed * Math.cos(theta);
-      dx += strafe * moveSpeed * Math.sin(theta);
-    }
-    if (dx != 0 || dy != 0 || dz != 0) {
-      const layer = Math.floor(game.player.location.y);
-      const row = Math.floor(game.player.location.z);
-      const col = Math.floor(game.player.location.x);
-      const collisions = getCollisions(map.blocks, layer, row, col);
-      const xFrac = game.player.location.x - col;
-      const xMove = getPosition(xFrac + dx, collisions[2], collisions[3]);
-      game.player.location.x = col + xMove;
-      const zFrac = game.player.location.z - row;
-      const zMove = getPosition(zFrac + dz, collisions[0], collisions[1]);
-      game.player.location.z = row + zMove;
-      const yFrac = game.player.location.y - layer;
-      const yMove = getPositionY(xMove, zMove, yFrac + dy, collisions[4]);
-      game.player.location.y = layer + yMove;
-      if (collisions[4] != 0 && yMove == 0.5) {
-        game.player.fallSpeed = 0;
-      }
-    } else {
-      game.player.fallSpeed = 0;
-    }
 
     // 3d: game world
     gl.enable(gl.DEPTH_TEST);
@@ -440,10 +297,13 @@ const setup = () => {
     let transform = identity();
     transform = matmul(transform, perspective(aspect, fov));
     transform = matmul(transform, translate(0, -0.01, -1));
-    transform = matmul(transform, rotate.x(-game.player.altitude));
-    transform = matmul(transform, rotate.y(-game.player.direction));
-    transform = matmul(transform, translate(-game.player.location.x, -game.player.location.y, -game.player.location.z));
-
+    transform = matmul(transform, rotate.x(-game.state.player.altitude));
+    transform = matmul(transform, rotate.y(-game.state.player.direction));
+    const trans = translate(
+      -game.state.player.location.x,
+      -game.state.player.location.y,
+      -game.state.player.location.z);
+    transform = matmul(transform, trans);
     Object.getOwnPropertyNames(staticMeshes).forEach((name) => {
       if (staticMeshes[name].vertices.length > 0) {
         staticMeshes[name].render(transform);
