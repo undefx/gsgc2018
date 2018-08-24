@@ -78,3 +78,73 @@ const uploadTexture = (gl, data) => {
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, data);
   return texture;
 };
+
+// A helper object that automates the rendering process. Only supports a subset
+// of GLSL types.
+const createRenderer = (gl, program) => {
+
+  // The supported GLSL types and their values.
+  const data = {
+    uniform: {
+      sampler2D: {},
+      float: {},
+      mat4: {},
+    },
+    attribute: {
+      vec2: {},
+      vec3: {},
+    },
+  };
+
+  // A rendering function that activates the program, uploads the data, and
+  // renders the geometry.
+  const render = (numPoints) => {
+    gl.useProgram(program.program);
+
+    let textureIndex = 0;
+    Object.getOwnPropertyNames(data.uniform.sampler2D).forEach((name) => {
+      const textureId = data.uniform.sampler2D[name];
+      const id = program.getUniform(name);
+      gl.activeTexture(gl.TEXTURE0 + textureIndex);
+      gl.bindTexture(gl.TEXTURE_2D, textureId);
+      gl.uniform1i(id, textureIndex);
+      textureIndex++;
+    });
+
+    Object.getOwnPropertyNames(data.uniform.float).forEach((name) => {
+      const value = data.uniform.float[name];
+      const id = program.getUniform(name);
+      gl.uniform1f(id, value);
+    });
+
+    Object.getOwnPropertyNames(data.uniform.mat4).forEach((name) => {
+      const values = data.uniform.mat4[name];
+      const id = program.getUniform(name);
+      gl.uniformMatrix4fv(id, false, new Float32Array(values));
+    });
+
+    Object.getOwnPropertyNames(data.attribute.vec2).forEach((name) => {
+      const buffer = data.attribute.vec2[name];
+      const id = program.getAttribute(name);
+      gl.enableVertexAttribArray(id);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.vertexAttribPointer(id, 2, gl.FLOAT, false, 0, 0);
+    });
+
+    Object.getOwnPropertyNames(data.attribute.vec3).forEach((name) => {
+      const buffer = data.attribute.vec3[name];
+      const id = program.getAttribute(name);
+      gl.enableVertexAttribArray(id);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.vertexAttribPointer(id, 3, gl.FLOAT, false, 0, 0);
+    });
+
+    gl.drawArrays(gl.TRIANGLES, 0, numPoints);
+  };
+
+  // The helper object consists of a data store and the rendering function.
+  return {
+    data: data,
+    render: render,
+  };
+};

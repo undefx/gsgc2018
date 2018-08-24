@@ -23,43 +23,19 @@ const newQuad = (gl, palette, texture, tex_x_offset, tex_x_num) => {
   texTransform = matmul(texTransform, translate(tex_x_offset / tex_x_num, 0, 0));
   texTransform = matmul(texTransform, scale(1 / tex_x_num, 1, 1));
 
-  const render = (gl, transform) => {
-    gl.useProgram(program.program);
-    let id;
+  const renderer = createRenderer(gl, program);
+  renderer.data.uniform.sampler2D.image = texture;
+  renderer.data.uniform.sampler2D.palette = palette;
+  renderer.data.uniform.float.filter = 1;
+  renderer.data.uniform.mat4.texTransform = texTransform;
+  renderer.data.attribute.vec2.position = positionBuffer;
+  renderer.data.attribute.vec2.texCoord = coordsBuffer;
+  const numPoints = positions.length / 2;
 
-    id = program.getUniform('transform');
-    gl.uniformMatrix4fv(id, false, new Float32Array(transform));
-
-    id = program.getUniform('palette');
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, palette);
-    gl.uniform1i(id, 0);
-
-    id = program.getUniform('image');
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.uniform1i(id, 1);
-
-    id = program.getUniform('filter');
-    gl.uniform1f(id, 1);
-
-    id = program.getUniform('texTransform');
-    gl.uniformMatrix4fv(id, false, new Float32Array(texTransform));
-
-    id = program.getAttribute('position');
-    gl.enableVertexAttribArray(id);
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.vertexAttribPointer(id, 2, gl.FLOAT, false, 0, 0);
-
-    id = program.getAttribute('texCoord');
-    gl.enableVertexAttribArray(id);
-    gl.bindBuffer(gl.ARRAY_BUFFER, coordsBuffer);
-    gl.vertexAttribPointer(id, 2, gl.FLOAT, false, 0, 0);
-
-    gl.drawArrays(gl.TRIANGLES, 0, positions.length / 2);
+  return (gl, transform) => {
+    renderer.data.uniform.mat4.transform = transform;
+    renderer.render(numPoints);
   };
-
-  return render;
 };
 
 // Adds a new block (cube) to a static mesh.
@@ -122,133 +98,18 @@ const newMeshRenderer = (gl, mesh) => {
   const vertexBuffer = uploadBuffer(gl, mesh.vertices);
   const texCoordBuffer = uploadBuffer(gl, mesh.texCoords);
 
+  const renderer = createRenderer(gl, program);
+  renderer.data.uniform.sampler2D.image = mesh.texture;
+  renderer.data.uniform.sampler2D.palette = mesh.palette;
+  renderer.data.uniform.float.filter = 1;
+  renderer.data.attribute.vec3.position = vertexBuffer;
+  renderer.data.attribute.vec2.texCoord = texCoordBuffer;
+  const numPoints = mesh.vertices.length / 3;
+
   return (transform) => {
-    let id;
-    gl.useProgram(program.program);
-
-    id = program.getUniform('transform');
-    gl.uniformMatrix4fv(id, false, new Float32Array(transform));
-
-    id = program.getUniform('palette');
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, mesh.palette);
-    gl.uniform1i(id, 0);
-
-    id = program.getUniform('image');
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, mesh.texture);
-    gl.uniform1i(id, 1);
-
-    id = program.getUniform('filter');
-    gl.uniform1f(id, mesh.filter);
-
-    id = program.getAttribute('position');
-    gl.enableVertexAttribArray(id);
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(id, 3, gl.FLOAT, false, 0, 0);
-
-    id = program.getAttribute('texCoord');
-    gl.enableVertexAttribArray(id);
-    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-    gl.vertexAttribPointer(id, 2, gl.FLOAT, false, 0, 0);
-
-    gl.drawArrays(gl.TRIANGLES, 0, mesh.vertices.length / 3);
+    renderer.data.uniform.mat4.transform = transform;
+    renderer.render(numPoints);
   };
-};
-
-// Creates a new block (cube) game object.
-const newBlock = (gl, palette, texture) => {
-  const program = newProgram(gl, 'block');
-
-  // vertices
-  const c = 0.5;
-  const vRUF = [+c, +c, -c];
-  const vRUB = [+c, +c, +c];
-  const vRDF = [+c, -c, -c];
-  const vRDB = [+c, -c, +c];
-  const vLUF = [-c, +c, -c];
-  const vLUB = [-c, +c, +c];
-  const vLDF = [-c, -c, -c];
-  const vLDB = [-c, -c, +c];
-
-  const positions = flatten([
-    // front
-    vLDF, vRUF, vLUF,
-    vLDF, vRDF, vRUF,
-    // right
-    vRDF, vRUB, vRUF,
-    vRDF, vRDB, vRUB,
-    // back
-    vRDB, vLUB, vRUB,
-    vRDB, vLDB, vLUB,
-    // left
-    vLDB, vLUF, vLUB,
-    vLDB, vLDF, vLUF,
-    // top
-    vLUF, vRUB, vLUB,
-    vLUF, vRUF, vRUB,
-    // bottom
-    vLDF, vRDB, vRDF,
-    vLDF, vLDB, vRDB,
-  ]);
-  const coords = [
-    // front
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // right
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // back
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // left
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // top
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // bottom
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-  ];
-  const positionBuffer = uploadBuffer(gl, positions);
-  const coordsBuffer = uploadBuffer(gl, coords);
-  const shift = translate(c, c, c);
-
-  const render = (gl, transform, timestamp) => {
-    gl.useProgram(program.program);
-    let id;
-
-    id = program.getUniform('transform');
-    gl.uniformMatrix4fv(id, false, new Float32Array(matmul(transform, shift)));
-
-    id = program.getUniform('palette');
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, palette);
-    gl.uniform1i(id, 0);
-
-    id = program.getUniform('image');
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.uniform1i(id, 1);
-
-    id = program.getUniform('filter');
-    gl.uniform1f(id, 1);
-
-    id = program.getAttribute('position');
-    gl.enableVertexAttribArray(id);
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.vertexAttribPointer(id, 3, gl.FLOAT, false, 0, 0);
-
-    id = program.getAttribute('texCoord');
-    gl.enableVertexAttribArray(id);
-    gl.bindBuffer(gl.ARRAY_BUFFER, coordsBuffer);
-    gl.vertexAttribPointer(id, 2, gl.FLOAT, false, 0, 0);
-
-    gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3);
-  };
-
-  return render;
 };
 
 // Creates a new ramp game object.
@@ -442,17 +303,20 @@ const setup = () => {
   gl.cullFace(gl.BACK);
 
   const paletteTexId = uploadTexture(gl, paletteTexture());
+  // TODO: make a static mesh of ramps and remove this list
   const blocks = [
-    null, //newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0, 0))),
     null,
-    null, //newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.4))),
-    null, // newBlock(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7))),
+    null,
+    null,
+    null,
     null,
     newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 0),
     newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 1),
     newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 2),
     newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 3),
   ];
+
+  // Text rendering.
   const glyphs = {};
   const glyphTexId = uploadTexture(gl, img_text);
   const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789.,!?-+:/@ ';
