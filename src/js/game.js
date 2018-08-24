@@ -51,34 +51,32 @@ const getPosition = (x, a, b) => {
 };
 
 const getPositionY = (x, z, y, type) => {
+  let height;
   if (type == 6) {
-    return z + 0.5;
+    height = z + 0.5;
+  } else if (type == -6) {
+    height = z - 0.5;
+  } else if (type == 8) {
+    height = (1 - z) + 0.5;
+  } else if (type == -8) {
+    height = (1 - z) - 0.5;
+  } else if (type == 7) {
+    height = (1 - x) + 0.5;
+  } else if (type == -7) {
+    height = (1 - x) - 0.5;
+  } else if (type == 9) {
+    height = x + 0.5;
+  } else if (type == -9) {
+    height = x - 0.5;
+  } else if (type == 0) {
+    // Falling.
+    height = -1;
+  } else {
+    // Any other block.
+    height = 0.5;
   }
-  if (type == -6) {
-    return z - 0.5;
-  }
-  if (type == 8) {
-    return (1 - z) + 0.5;
-  }
-  if (type == -8) {
-    return (1 - z) - 0.5;
-  }
-  if (type == 7) {
-    return (1 - x) + 0.5;
-  }
-  if (type == -7) {
-    return (1 - x) - 0.5;
-  }
-  if (type == 9) {
-    return x + 0.5;
-  }
-  if (type == -9) {
-    return x - 0.5;
-  }
-  if (type == 0) {
-    return y;
-  }
-  return Math.max(y, 0.5);
+  const isFalling = y > height;
+  return [Math.max(y, height), isFalling];
 };
 
 // Initialize a new game.
@@ -110,7 +108,6 @@ const newGame = () => {
 
     const moveSpeed = dt * 2;
     const strafe = 0.8;
-    state.player.fallSpeed += dt * 0.12;
     let dx = 0, dy = -state.player.fallSpeed, dz = 0;
     if (state.input.forward) {
       const theta = state.player.direction;
@@ -132,23 +129,21 @@ const newGame = () => {
       dz += strafe * moveSpeed * Math.cos(theta);
       dx += strafe * moveSpeed * Math.sin(theta);
     }
-    if (dx != 0 || dy != 0 || dz != 0) {
-      const layer = Math.floor(state.player.location.y);
-      const row = Math.floor(state.player.location.z);
-      const col = Math.floor(state.player.location.x);
-      const collisions = getCollisions(map.blocks, layer, row, col);
-      const xFrac = state.player.location.x - col;
-      const xMove = getPosition(xFrac + dx, collisions[2], collisions[3]);
-      state.player.location.x = col + xMove;
-      const zFrac = state.player.location.z - row;
-      const zMove = getPosition(zFrac + dz, collisions[0], collisions[1]);
-      state.player.location.z = row + zMove;
-      const yFrac = state.player.location.y - layer;
-      const yMove = getPositionY(xMove, zMove, yFrac + dy, collisions[4]);
-      state.player.location.y = layer + yMove;
-      if (collisions[4] != 0 && yMove == 0.5) {
-        state.player.fallSpeed = 0;
-      }
+    const layer = Math.floor(state.player.location.y);
+    const row = Math.floor(state.player.location.z);
+    const col = Math.floor(state.player.location.x);
+    const collisions = getCollisions(map.blocks, layer, row, col);
+    const xFrac = state.player.location.x - col;
+    const xMove = getPosition(xFrac + dx, collisions[2], collisions[3]);
+    state.player.location.x = col + xMove;
+    const zFrac = state.player.location.z - row;
+    const zMove = getPosition(zFrac + dz, collisions[0], collisions[1]);
+    state.player.location.z = row + zMove;
+    const yFrac = state.player.location.y - layer;
+    const [yMove, isFalling] = getPositionY(xMove, zMove, yFrac + dy, collisions[4]);
+    state.player.location.y = layer + yMove;
+    if (isFalling) {
+      state.player.fallSpeed += dt * 0.12;
     } else {
       state.player.fallSpeed = 0;
     }
