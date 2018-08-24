@@ -92,6 +92,53 @@ const addBlockToMesh = (mesh, dx, dy, dz) => {
   ].forEach(e => mesh.texCoords.push(e));
 };
 
+// Adds a new ramp to a static mesh.
+const addRampToMesh = (mesh, direction, dx, dy, dz) => {
+  // vertices
+  const c = 0.5;
+  const trans = translate(c + dx, c + dy, c + dz);
+  const rot = rotate.y(-Math.PI / 2 * direction);
+  const shift = matmul(trans, rot);
+  const applyShift = (x, y, z) => matmul(shift, [x, y, z, 1]).splice(0, 3);
+  const vRUB = applyShift(+c, +c, +c);
+  const vRDF = applyShift(+c, -c, -c);
+  const vRDB = applyShift(+c, -c, +c);
+  const vLUB = applyShift(-c, +c, +c);
+  const vLDF = applyShift(-c, -c, -c);
+  const vLDB = applyShift(-c, -c, +c);
+
+  flatten([
+    // ramp
+    vLDF, vRUB, vLUB,
+    vLDF, vRDF, vRUB,
+    // right
+    vRDF, vRDB, vRUB,
+    // back
+    vRDB, vLUB, vRUB,
+    vRDB, vLDB, vLUB,
+    // left
+    vLDB, vLDF, vLUB,
+    // bottom
+    vLDF, vRDB, vRDF,
+    vLDF, vLDB, vRDB,
+  ]).forEach(e => mesh.vertices.push(e));
+  const coords = [
+    // ramp
+    0, 0, 1, 1, 0, 1,
+    0, 0, 1, 0, 1, 1,
+    // right
+    0, 0, 1, 0, 1, 1,
+    // back
+    0, 0, 1, 1, 0, 1,
+    0, 0, 1, 0, 1, 1,
+    // left
+    0, 0, 1, 0, 0, 1,
+    // bottom
+    0, 0, 1, 1, 0, 1,
+    0, 0, 1, 0, 1, 1,
+  ].forEach(e => mesh.texCoords.push(e));
+};
+
 // Creates a new static mesh renderer.
 const newMeshRenderer = (gl, mesh) => {
   const program = mesh.program;
@@ -110,89 +157,6 @@ const newMeshRenderer = (gl, mesh) => {
     renderer.data.uniform.mat4.transform = transform;
     renderer.render(numPoints);
   };
-};
-
-// Creates a new ramp game object.
-const newRamp = (gl, palette, texture, direction) => {
-  const program = newProgram(gl, 'block');
-
-  // vertices
-  const c = 0.5;
-  const vRUB = [+c, +c, +c];
-  const vRDF = [+c, -c, -c];
-  const vRDB = [+c, -c, +c];
-  const vLUB = [-c, +c, +c];
-  const vLDF = [-c, -c, -c];
-  const vLDB = [-c, -c, +c];
-
-  const positions = flatten([
-    // ramp
-    vLDF, vRUB, vLUB,
-    vLDF, vRDF, vRUB,
-    // right
-    vRDF, vRDB, vRUB,
-    // back
-    vRDB, vLUB, vRUB,
-    vRDB, vLDB, vLUB,
-    // left
-    vLDB, vLDF, vLUB,
-    // bottom
-    vLDF, vRDB, vRDF,
-    vLDF, vLDB, vRDB,
-  ]);
-  const coords = [
-    // ramp
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // right
-    0, 0, 1, 0, 1, 1,
-    // back
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // left
-    0, 0, 1, 0, 0, 1,
-    // bottom
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-  ];
-  const positionBuffer = uploadBuffer(gl, positions);
-  const coordsBuffer = uploadBuffer(gl, coords);
-  const shift = matmul(translate(c, c, c), rotate.y(-Math.PI / 2 * direction));
-
-  const render = (gl, transform, timestamp) => {
-    gl.useProgram(program.program);
-    let id;
-
-    id = program.getUniform('transform');
-    gl.uniformMatrix4fv(id, false, new Float32Array(matmul(transform, shift)));
-
-    id = program.getUniform('palette');
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, palette);
-    gl.uniform1i(id, 0);
-
-    id = program.getUniform('image');
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.uniform1i(id, 1);
-
-    id = program.getUniform('filter');
-    gl.uniform1f(id, 1);
-
-    id = program.getAttribute('position');
-    gl.enableVertexAttribArray(id);
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.vertexAttribPointer(id, 3, gl.FLOAT, false, 0, 0);
-
-    id = program.getAttribute('texCoord');
-    gl.enableVertexAttribArray(id);
-    gl.bindBuffer(gl.ARRAY_BUFFER, coordsBuffer);
-    gl.vertexAttribPointer(id, 2, gl.FLOAT, false, 0, 0);
-
-    gl.drawArrays(gl.TRIANGLES, 0, positions.length / 3);
-  };
-
-  return render;
 };
 
 // Computes movement collisions at the given player location.
@@ -303,18 +267,6 @@ const setup = () => {
   gl.cullFace(gl.BACK);
 
   const paletteTexId = uploadTexture(gl, paletteTexture());
-  // TODO: make a static mesh of ramps and remove this list
-  const blocks = [
-    null,
-    null,
-    null,
-    null,
-    null,
-    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 0),
-    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 1),
-    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 2),
-    newRamp(gl, paletteTexId, uploadTexture(gl, randomTexture(8, 0, 0.8, 0.3)), 3),
-  ];
 
   // Text rendering.
   const glyphs = {};
@@ -396,6 +348,10 @@ const setup = () => {
     texCoords: [],
     render: null,
   });
+
+  const rampTexture = uploadTexture(gl, randomTexture(8, 0, 0.2, 0.7));
+  const rampBlockType = newBlockType(rampTexture);
+
   const staticMeshes = {
     // Ceiling
     1: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0, 0))),
@@ -403,16 +359,21 @@ const setup = () => {
     3: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.4))),
     // Walls
     4: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7))),
+    // Ramps (N, E, S, W)
+    'ramps': rampBlockType,
   };
-  const stragglers = [];
   for (let layer = 0; layer < map.blocks.length; layer++) {
     for (let row = 0; row < map.blocks[0].length; row++) {
       for (let col = 0; col < map.blocks[0][0].length; col++) {
         const idx = map.blocks[layer][row][col];
-        if (staticMeshes.hasOwnProperty(idx)) {
-          addBlockToMesh(staticMeshes[idx], col, layer, row);
-        } else if (idx != 0) {
-          stragglers.push([blocks[idx - 1], [col, layer, row]]);
+        const isRamp = idx >= 6 && idx <= 9;
+        if (staticMeshes.hasOwnProperty(idx) || isRamp) {
+          if (isRamp) {
+            const direction = idx - 6;
+            addRampToMesh(staticMeshes.ramps, direction, col, layer, row);
+          } else {
+            addBlockToMesh(staticMeshes[idx], col, layer, row);
+          }
         }
       }
     }
@@ -495,11 +456,6 @@ const setup = () => {
 
     Object.getOwnPropertyNames(staticMeshes).forEach((name) => {
       staticMeshes[name].render(transform);
-    });
-    stragglers.forEach((s) => {
-      const render = s[0];
-      const [x, y, z] = s[1];
-      render(gl, matmul(transform, translate(x, y, z)), timestamp);
     });
 
     // 2d: user interface
