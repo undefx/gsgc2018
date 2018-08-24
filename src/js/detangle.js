@@ -49,7 +49,6 @@ const addBlockToMesh = (mesh, dx, dy, dz) => {
   const vLUB = [dx, dy + 1, dz + 1];
   const vLDF = [dx, dy, dz];
   const vLDB = [dx, dy, dz + 1];
-
   flatten([
     // front
     vLDF, vRUF, vLUF,
@@ -67,29 +66,18 @@ const addBlockToMesh = (mesh, dx, dy, dz) => {
     vLUF, vRUB, vLUB,
     vLUF, vRUF, vRUB,
     // bottom
-    vLDF, vRDB, vRDF,
-    vLDF, vLDB, vRDB,
+    vLDB, vRDF, vLDF,
+    vLDB, vRDB, vRDF,
   ]).forEach(e => mesh.vertices.push(e));
-  [
-    // front
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // right
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // back
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // left
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // top
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-    // bottom
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-  ].forEach(e => mesh.texCoords.push(e));
+
+  // Texture coordinates for a single face. All faces are identical.
+  const faceCoords = [
+    0, 1, 1, 0, 0, 0,
+    0, 1, 1, 1, 1, 0,
+  ];
+  flatten([
+    faceCoords, faceCoords, faceCoords, faceCoords, faceCoords, faceCoords
+  ]).forEach(e => mesh.texCoords.push(e));
 };
 
 // Adds a new ramp to a static mesh.
@@ -106,7 +94,6 @@ const addRampToMesh = (mesh, direction, dx, dy, dz) => {
   const vLUB = applyShift(-c, +c, +c);
   const vLDF = applyShift(-c, -c, -c);
   const vLDB = applyShift(-c, -c, +c);
-
   flatten([
     // ramp
     vLDF, vRUB, vLUB,
@@ -122,21 +109,24 @@ const addRampToMesh = (mesh, direction, dx, dy, dz) => {
     vLDF, vRDB, vRDF,
     vLDF, vLDB, vRDB,
   ]).forEach(e => mesh.vertices.push(e));
-  const coords = [
+
+  // Texture coordinates for square faces.
+  const squareCoords = [
+    0, 1, 1, 0, 0, 0,
+    0, 1, 1, 1, 1, 0,
+  ];
+  flatten([
     // ramp
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
+    squareCoords,
     // right
-    0, 0, 1, 0, 1, 1,
+    [0, 1, 1, 1, 1, 0,],
     // back
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
+    squareCoords,
     // left
-    0, 0, 1, 0, 0, 1,
+    [0, 1, 1, 1, 0, 0],
     // bottom
-    0, 0, 1, 1, 0, 1,
-    0, 0, 1, 0, 1, 1,
-  ].forEach(e => mesh.texCoords.push(e));
+    squareCoords,
+  ]).forEach(e => mesh.texCoords.push(e));
 };
 
 // Creates a new static mesh renderer.
@@ -455,7 +445,9 @@ const setup = () => {
     transform = matmul(transform, translate(-game.player.location.x, -game.player.location.y, -game.player.location.z));
 
     Object.getOwnPropertyNames(staticMeshes).forEach((name) => {
-      staticMeshes[name].render(transform);
+      if (staticMeshes[name].vertices.length > 0) {
+        staticMeshes[name].render(transform);
+      }
     });
 
     // 2d: user interface
