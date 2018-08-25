@@ -98,7 +98,35 @@ const newGame = () => {
       left: false,
       right: false,
       pointerLocked: false,
-    }
+    },
+    orb: {
+      active: false,
+      position: {
+        x: 0,
+        y: 0,
+        z: 0,
+      },
+      velocity: {
+        x: 0,
+        y: 0,
+        z: 0,
+      },
+    },
+  };
+
+  state.sendOrb = () => {
+    state.orb.active = true;
+    state.orb.position.x = state.player.location.x;
+    state.orb.position.y = state.player.location.y;
+    state.orb.position.z = state.player.location.z;
+    const orbSpeed = 0.25;
+    const sd = Math.sin(state.player.direction);
+    const cd = Math.cos(state.player.direction);
+    const sa = Math.sin(state.player.altitude);
+    const ca = Math.cos(state.player.altitude);
+    state.orb.velocity.x = orbSpeed * sd * ca;
+    state.orb.velocity.z = orbSpeed * cd * ca;
+    state.orb.velocity.y = orbSpeed * sa;
   };
 
   const walkDirection = [
@@ -146,6 +174,12 @@ const newGame = () => {
       } else {
         state.player.fallSpeed = 0;
       }
+    }
+    if (state.orb.active) {
+      state.orb.position.x += state.orb.velocity.x;
+      state.orb.position.y += state.orb.velocity.y;
+      state.orb.position.z += state.orb.velocity.z;
+      state.orb.velocity.y -= dt * fallRate;
     }
   };
 

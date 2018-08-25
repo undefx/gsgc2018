@@ -149,6 +149,8 @@ const newMeshRenderer = (gl, mesh) => {
   };
 };
 
+const mouseSensitivity = 0.0015;
+
 const setup = () => {
   const canvas = document.getElementsByTagName('canvas')[0];
   const options = {alpha: false, antialias : false};
@@ -204,10 +206,17 @@ const setup = () => {
       game.state.input.right = false;
     }
   });
-  canvas.onclick = function() {
-    canvas.requestPointerLock();
-  };
-  document.addEventListener('pointerlockchange', () => {
+  canvas.addEventListener('click', (e) => {
+    if (!game.state.input.pointerLocked) {
+      canvas.requestPointerLock();
+    }
+  });
+  canvas.addEventListener('mousedown', (e) => {
+    if (game.state.input.pointerLocked) {
+      game.state.sendOrb();
+    }
+  });
+  document.addEventListener('pointerlockchange', (e) => {
     const isLocked = document.pointerLockElement === canvas;
     if (!game.state.input.pointerLocked && isLocked) {
       game.state.input.pointerLocked = document.pointerLockElement === canvas;
@@ -220,7 +229,6 @@ const setup = () => {
       playNote(420);
     }
   });
-  const mouseSensitivity = 0.0015;
   canvas.addEventListener('mousemove', (e) => {
     if (game.state.input.pointerLocked) {
       game.state.player.direction += e.movementX * mouseSensitivity;
@@ -244,6 +252,11 @@ const setup = () => {
 
   const rampTexture = uploadTexture(gl, randomTexture(8, 0, 0.2, 0.7));
   const rampBlockType = newBlockType(rampTexture);
+
+  const orbTexture = uploadTexture(gl, solidTexture(0.8, 0.4, 0.1));
+  const orbBlockType = newBlockType(orbTexture);
+  addBlockToMesh(orbBlockType, -0.5, -0.5, -0.5);
+  orbBlockType.render = newMeshRenderer(gl, orbBlockType);
 
   const staticMeshes = {
     // Ceiling
@@ -309,6 +322,14 @@ const setup = () => {
         staticMeshes[name].render(transform);
       }
     });
+    if (game.state.orb.active) {
+      transform = matmul(transform, translate(
+        game.state.orb.position.x,
+        game.state.orb.position.y,
+        game.state.orb.position.z));
+      transform = matmul(transform, scale(0.05, 0.05, 0.05));
+      orbBlockType.render(transform);
+    }
 
     // 2d: user interface
     gl.disable(gl.DEPTH_TEST);
