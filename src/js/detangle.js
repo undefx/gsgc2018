@@ -251,8 +251,10 @@ const setup = () => {
   const staticMeshes = {
     // Ceiling
     1: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0, 0))),
+    // Ground
+    2: newBlockType(uploadTexture(gl, randomTexture(8, 0, 0.7, 0))),
     // Floors
-    3: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.4))),
+    3: newBlockType(uploadTexture(gl, randomTexture(8, 0.5, 0.5, 0.3))),
     // Walls
     4: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7))),
     // Ramps (N, E, S, W)

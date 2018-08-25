@@ -93,12 +93,12 @@ var height = 16;
 var width = 16;
 var layers = 7;
 for(var l = 0; l < layers+1; l++){
-	map.blocks.push(newSolidLayer(width, height, 3));
+	map.blocks.push(newSolidLayer(width, height, l == 0 ? 2 : 3));
 	map.blocks.push(newMazeLayer(width, height, 0.1, 0.15, 4));
 }
 map.blocks.push(newSolidLayer(width, height, 1)); //ceiling
 
-for(var k = 1; k < layers*2-1; k+=2){
+for(var k = 1; k < layers*2+1; k+=2){
 	var rampCount = 0;
 	for(var h = 0; h < height; h++){
 		for(var w = 0; w < width; w++){
