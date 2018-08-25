@@ -150,6 +150,14 @@ const newMeshRenderer = (gl, mesh) => {
 };
 
 const mouseSensitivity = 0.0015;
+const keyMap = {
+  'w': 'forward',
+  'a': 'left',
+  's': 'backward',
+  'd': 'right',
+  ' ': 'jumping',
+};
+
 
 const setup = () => {
   const canvas = document.getElementsByTagName('canvas')[0];
@@ -179,37 +187,13 @@ const setup = () => {
   const game = newGame();
 
   canvas.addEventListener('keydown', (e) => {
-    if (e.key == 'w') {
-      game.state.input.forward = true;
-    }
-    if (e.key == 'a') {
-      game.state.input.left = true;
-    }
-    if (e.key == 's') {
-      game.state.input.backward = true;
-    }
-    if (e.key == 'd') {
-      game.state.input.right = true;
-    }
-    if (e.key == ' ') {
-      game.state.input.jumping = true;
+    if (keyMap.hasOwnProperty(e.key)) {
+      game.state.input[keyMap[e.key]] = true;
     }
   });
   canvas.addEventListener('keyup', (e) => {
-    if (e.key == 'w') {
-      game.state.input.forward = false;
-    }
-    if (e.key == 'a') {
-      game.state.input.left = false;
-    }
-    if (e.key == 's') {
-      game.state.input.backward = false;
-    }
-    if (e.key == 'd') {
-      game.state.input.right = false;
-    }
-    if (e.key == ' ') {
-      game.state.input.jumping = false;
+    if (keyMap.hasOwnProperty(e.key)) {
+      game.state.input[keyMap[e.key]] = false;
     }
   });
   canvas.addEventListener('click', (e) => {
@@ -220,6 +204,14 @@ const setup = () => {
   canvas.addEventListener('mousedown', (e) => {
     if (game.state.input.pointerLocked) {
       game.state.sendOrb();
+    }
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    if (game.state.input.pointerLocked) {
+      game.state.player.direction += e.movementX * mouseSensitivity;
+      game.state.player.altitude -= e.movementY * mouseSensitivity;
+      game.state.player.altitude = Math.min(game.state.player.altitude, +Math.PI / 2);
+      game.state.player.altitude = Math.max(game.state.player.altitude, -Math.PI / 2);
     }
   });
   document.addEventListener('pointerlockchange', (e) => {
@@ -233,14 +225,6 @@ const setup = () => {
     } else if (!isLocked) {
       game.state.input.pointerLocked = false;
       playNote(420);
-    }
-  });
-  canvas.addEventListener('mousemove', (e) => {
-    if (game.state.input.pointerLocked) {
-      game.state.player.direction += e.movementX * mouseSensitivity;
-      game.state.player.altitude -= e.movementY * mouseSensitivity;
-      game.state.player.altitude = Math.min(game.state.player.altitude, +Math.PI / 2);
-      game.state.player.altitude = Math.max(game.state.player.altitude, -Math.PI / 2);
     }
   });
 
