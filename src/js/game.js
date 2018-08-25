@@ -98,6 +98,7 @@ const newGame = () => {
       left: false,
       right: false,
       pointerLocked: false,
+      jumping: false,
     },
     orb: {
       active: false,
@@ -135,15 +136,16 @@ const newGame = () => {
     [7, 0, 1],
   ];
   const quarterPi = Math.PI / 4;
-  const fallRate = 0.12;
+  const fallRate = 0.16;
   const walkRate = 2;
+  const jumpSpeed = 0.04;
 
   let lastUpdate = 0;
   const update = (timestamp) => {
     const dt = Math.min(timestamp - lastUpdate, 1000) / 1000;
     lastUpdate = timestamp;
 
-    let dx = 0, dy = -state.player.fallSpeed, dz = 0;
+    let dx = 0, dz = 0;
     const walkSpeed = dt * walkRate;
     const walkIdx = [
       1 + state.input.forward - state.input.backward,
@@ -155,6 +157,10 @@ const newGame = () => {
       dz += walkSpeed * Math.cos(theta);
       dx += walkSpeed * Math.sin(theta);
     }
+    if (state.input.jumping && state.player.fallSpeed == 0) {
+      state.player.fallSpeed -= jumpSpeed;
+    }
+    let dy = -state.player.fallSpeed;
     if (dx != 0 || dy != 0 || dz != 0) {
       const layer = Math.floor(state.player.location.y);
       const row = Math.floor(state.player.location.z);

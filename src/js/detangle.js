@@ -191,6 +191,9 @@ const setup = () => {
     if (e.key == 'd') {
       game.state.input.right = true;
     }
+    if (e.key == ' ') {
+      game.state.input.jumping = true;
+    }
   });
   canvas.addEventListener('keyup', (e) => {
     if (e.key == 'w') {
@@ -204,6 +207,9 @@ const setup = () => {
     }
     if (e.key == 'd') {
       game.state.input.right = false;
+    }
+    if (e.key == ' ') {
+      game.state.input.jumping = false;
     }
   });
   canvas.addEventListener('click', (e) => {
