@@ -116,6 +116,9 @@ const newGame = () => {
   };
 
   state.sendOrb = () => {
+    if (state.orb.active) {
+      return;
+    }
     state.orb.active = true;
     state.orb.position.x = state.player.location.x;
     state.orb.position.y = state.player.location.y;
@@ -186,6 +189,13 @@ const newGame = () => {
       state.orb.position.y += state.orb.velocity.y;
       state.orb.position.z += state.orb.velocity.z;
       state.orb.velocity.y -= dt * fallRate;
+      const col2 = Math.floor(state.orb.position.x);
+      const layer2 = Math.floor(state.orb.position.y);
+      const row2 = Math.floor(state.orb.position.z);
+      if (map.blocks[layer2][row2][col2] != 0) {
+        playNote(220);
+        state.orb.active = false;
+      }
     }
   };
 
