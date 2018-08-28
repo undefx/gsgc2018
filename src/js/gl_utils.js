@@ -88,9 +88,11 @@ const createRenderer = (gl, program) => {
     uniform: {
       sampler2D: {},
       float: {},
+      vec3: {},
       mat4: {},
     },
     attribute: {
+      float: {},
       vec2: {},
       vec3: {},
     },
@@ -117,10 +119,24 @@ const createRenderer = (gl, program) => {
       gl.uniform1f(id, value);
     });
 
+    Object.getOwnPropertyNames(data.uniform.vec3).forEach((name) => {
+      const values = data.uniform.vec3[name];
+      const id = program.getUniform(name);
+      gl.uniform3fv(id, new Float32Array(values));
+    });
+
     Object.getOwnPropertyNames(data.uniform.mat4).forEach((name) => {
       const values = data.uniform.mat4[name];
       const id = program.getUniform(name);
       gl.uniformMatrix4fv(id, false, new Float32Array(values));
+    });
+
+    Object.getOwnPropertyNames(data.attribute.float).forEach((name) => {
+      const buffer = data.attribute.float[name];
+      const id = program.getAttribute(name);
+      gl.enableVertexAttribArray(id);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.vertexAttribPointer(id, 1, gl.FLOAT, false, 0, 0);
     });
 
     Object.getOwnPropertyNames(data.attribute.vec2).forEach((name) => {

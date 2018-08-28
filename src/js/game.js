@@ -113,6 +113,7 @@ const newGame = () => {
         z: 0,
       },
     },
+    emitter: null,
   };
 
   state.sendOrb = () => {
@@ -195,6 +196,7 @@ const newGame = () => {
       if (map.blocks[layer2][row2][col2] != 0) {
         playNote(220);
         state.orb.active = false;
+        state.emitter = [state.orb.position.x, state.orb.position.y, state.orb.position.z];
       }
     }
   };

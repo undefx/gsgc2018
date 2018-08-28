@@ -234,7 +234,6 @@ const setup = () => {
     program: blockProgram,
     palette: paletteTexId,
     texture: textureId,
-    filter: 1,
     vertices: [],
     texCoords: [],
     render: null,
@@ -315,12 +314,20 @@ const setup = () => {
       }
     });
     if (game.state.orb.active) {
-      transform = matmul(transform, translate(
+      let orbTransform = matmul(transform, translate(
         game.state.orb.position.x,
         game.state.orb.position.y,
         game.state.orb.position.z));
-      transform = matmul(transform, scale(0.05, 0.05, 0.05));
-      orbBlockType.render(transform);
+      orbTransform = matmul(orbTransform, scale(0.05, 0.05, 0.05));
+      orbBlockType.render(orbTransform);
+    }
+    if (game.state.emitter != null) {
+      if (game.state.emitter instanceof Array) {
+        game.state.emitter = newEmitter(gl, paletteTexId, ...game.state.emitter);
+      }
+      if (!game.state.emitter(transform, timestamp, game)) {
+        game.state.emitter = null;
+      }
     }
 
     // 2d: user interface
