@@ -79,7 +79,6 @@ const shaders = {
   particle: {
     vertex: `
       uniform mat4 u_transform;
-      uniform float u_time_v;
       uniform vec3 u_delta;
       uniform float u_age;
       attribute vec3 a_position;
@@ -88,8 +87,9 @@ const shaders = {
 
       void main() {
         v_entropy = a_entropy;
-        float s = sin(u_time_v * (a_entropy * 2.0 - 1.0) * 6.28 * 5.0);
-        float c = cos(u_time_v * (a_entropy * 2.0 - 1.0) * 6.28 * 5.0);
+        float ff = u_age * 6.28 * a_entropy * 4.0 - 2.0;
+        float s = sin(ff);
+        float c = cos(ff);
         float d = -c;
         float angle1 = atan(u_delta.z, u_delta.x);
         float angle2 = atan(-length(u_delta.xz), u_delta.y);
@@ -117,8 +117,7 @@ const shaders = {
           0, 0, 1, 0,
           0, 0, 0, 1
         );
-        float age = u_age; //fract(u_time_v * 2.0 + a_entropy);
-        float invAge = 1.0 / (1.0 + age * 4.0);
+        float invAge = 1.0 / (1.0 + u_age * u_age * 9.0);
         mat4 scale = mat4(
           invAge, 0, 0, 0,
           0, invAge, 0, 0,
@@ -131,10 +130,10 @@ const shaders = {
         b = cos(angle3) * sin(angle4);
         c = cos(angle4);
         vec4 pos = scale * rotateY * rotateX * rotateZ * vec4(a_position, 1);
-        float velocity = (0.5 * a_entropy + 0.5) * 8.0 * pow(age, 0.5);
+        float velocity = (0.5 * a_entropy + 0.5) * 6.0 * pow(u_age, 0.5);
         pos.x += velocity * a;
         pos.z += velocity * b;
-        pos.y += velocity * c - pow(age * 1.5, 2.0);
+        pos.y += velocity * c - pow(u_age * 1.25, 2.0);
         gl_Position = u_transform * pos;
       }
     `,
@@ -143,18 +142,14 @@ const shaders = {
 
       uniform sampler2D u_palette;
       uniform float u_filter;
-      uniform float u_time_f;
-      uniform vec3 u_color;
       varying float v_entropy;
 
       void main() {
         float n = 3.0;
-        vec3 abc = vec3(fract(v_entropy * 16.0), fract(v_entropy * 256.0), fract(v_entropy * 4096.0));
-        vec3 rgb = u_color * abc;
+        vec3 rgb = vec3(fract(v_entropy * 16.0), fract(v_entropy * 256.0), fract(v_entropy * 4096.0));
         vec3 xyz = floor(rgb * (n - 0.001));
         float idx = (xyz.x * n * n + xyz.y * n + xyz.z + 0.5) / (n * n * n);
         vec3 rgb2 = texture2D(u_palette, vec2(idx, 0.5)).rgb;
-        rgb2.r += sin(u_time_f) * 0.05;
         gl_FragColor = vec4(rgb2 * u_filter + (1.0 - u_filter) * rgb, 1);
       }
     `,

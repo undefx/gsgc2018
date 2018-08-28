@@ -23,7 +23,6 @@ const createEmitter = (gl, paletteTexId) => {
   const renderer = createRenderer(gl, program);
   renderer.data.uniform.sampler2D.palette = paletteTexId;
   renderer.data.uniform.float.filter = 1;
-  renderer.data.uniform.vec3.color = [1, 1, 1];
   renderer.data.attribute.vec3.position = vertexBuffer;
   renderer.data.attribute.float.entropy = entropyBuffer;
 
@@ -55,8 +54,6 @@ const spawnEmitter = (emitter, x, y, z) => {
     ];
     emitter.renderer.data.uniform.mat4.transform = matmul(transform, model);
     emitter.renderer.data.uniform.vec3.delta = delta;
-    emitter.renderer.data.uniform.float.time_v = timestamp * 0.001;
-    emitter.renderer.data.uniform.float.time_f = timestamp * 0.001;
     emitter.renderer.data.uniform.float.age = state.age;
     emitter.render();
   };
