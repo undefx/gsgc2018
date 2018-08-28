@@ -247,7 +247,9 @@ const setup = () => {
   const orbBlockType = newBlockType(orbTexture);
   addBlockToMesh(orbBlockType, -0.5, -0.5, -0.5);
   orbBlockType.render = newMeshRenderer(gl, orbBlockType);
-  
+
+  const baseEmitter = createEmitter(gl, paletteTexId);
+
   const baddieTexture = uploadTexture(gl, solidTexture(0.9, 0.2, 0.2));//lance
   var baddieMesh = newBlockType(baddieTexture);
   var baddie = newBaddie(gl, baddieMesh);//lance
@@ -319,27 +321,32 @@ const setup = () => {
         staticMeshes[name].render(transform);
       }
     });
-	var bt = matmul(transform, translate(
-        baddie.location.x,
-        baddie.location.y,
-        baddie.location.z));
-	baddie.render(bt);
-    if (game.state.orb.active) {
+
+    var bt = matmul(transform, translate(
+    baddie.location.x,
+    baddie.location.y,
+    baddie.location.z));
+    baddie.render(bt);
+
+    game.state.orbs.forEach((orb) => {
       let orbTransform = matmul(transform, translate(
-        game.state.orb.position.x,
-        game.state.orb.position.y,
-        game.state.orb.position.z));
+        orb.position.x,
+        orb.position.y,
+        orb.position.z));
       orbTransform = matmul(orbTransform, scale(0.05, 0.05, 0.05));
       orbBlockType.render(orbTransform);
+    });
+
+    if (game.state.emitterSpawns.length > 0) {
+      game.state.emitterSpawns.forEach((xyz) => {
+        game.state.emitters.push(spawnEmitter(baseEmitter, ...xyz));
+      });
+      game.state.emitterSpawns = [];
     }
-    if (game.state.emitter != null) {
-      if (game.state.emitter instanceof Array) {
-        game.state.emitter = newEmitter(gl, paletteTexId, ...game.state.emitter);
-      }
-      if (!game.state.emitter(transform, timestamp, game)) {
-        game.state.emitter = null;
-      }
-    }
+
+    game.state.emitters.forEach((emitter) => {
+      emitter.render(transform, timestamp, game);
+    });
 
     // 2d: user interface
     gl.disable(gl.DEPTH_TEST);

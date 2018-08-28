@@ -100,38 +100,31 @@ const newGame = () => {
       pointerLocked: false,
       jumping: false,
     },
-    orb: {
-      active: false,
-      position: {
-        x: 0,
-        y: 0,
-        z: 0,
-      },
-      velocity: {
-        x: 0,
-        y: 0,
-        z: 0,
-      },
-    },
-    emitter: null,
+    orbs: [],
+    emitterSpawns: [],
+    emitters: [],
   };
 
   state.sendOrb = () => {
-    if (state.orb.active) {
-      return;
-    }
-    state.orb.active = true;
-    state.orb.position.x = state.player.location.x;
-    state.orb.position.y = state.player.location.y;
-    state.orb.position.z = state.player.location.z;
     const orbSpeed = 0.25;
     const sd = Math.sin(state.player.direction);
     const cd = Math.cos(state.player.direction);
     const sa = Math.sin(state.player.altitude);
     const ca = Math.cos(state.player.altitude);
-    state.orb.velocity.x = orbSpeed * sd * ca;
-    state.orb.velocity.z = orbSpeed * cd * ca;
-    state.orb.velocity.y = orbSpeed * sa;
+    const orb = {
+      active: true,
+      position: {
+        x: state.player.location.x,
+        y: state.player.location.y,
+        z: state.player.location.z,
+      },
+      velocity: {
+        x: orbSpeed * sd * ca,
+        y: orbSpeed * sa,
+        z: orbSpeed * cd * ca,
+      },
+    };
+    state.orbs.push(orb);
   };
 
   const walkDirection = [
@@ -185,18 +178,31 @@ const newGame = () => {
         state.player.fallSpeed = 0;
       }
     }
-    if (state.orb.active) {
-      state.orb.position.x += state.orb.velocity.x;
-      state.orb.position.y += state.orb.velocity.y;
-      state.orb.position.z += state.orb.velocity.z;
-      state.orb.velocity.y -= dt * fallRate;
-      const col2 = Math.floor(state.orb.position.x);
-      const layer2 = Math.floor(state.orb.position.y);
-      const row2 = Math.floor(state.orb.position.z);
-      if (map.blocks[layer2][row2][col2] != 0) {
+    state.orbs.forEach((orb) => {
+      orb.position.x += orb.velocity.x;
+      orb.position.y += orb.velocity.y;
+      orb.position.z += orb.velocity.z;
+      orb.velocity.y -= dt * fallRate;
+      const col = Math.floor(orb.position.x);
+      const layer = Math.floor(orb.position.y);
+      const row = Math.floor(orb.position.z);
+      if (map.blocks[layer][row][col] != 0) {
         playNote(220);
-        state.orb.active = false;
-        state.emitter = [state.orb.position.x, state.orb.position.y, state.orb.position.z];
+        orb.active = false;
+        state.emitterSpawns.push([orb.position.x, orb.position.y, orb.position.z]);
+      }
+    });
+    state.emitters.forEach((emitter) => {
+      emitter.state.age += dt * 3;
+    });
+    for (let i = 0; i < state.orbs.length; i++) {
+      if (!state.orbs[i].active) {
+        state.orbs.splice(i--, 1);
+      }
+    }
+    for (let i = 0; i < state.emitters.length; i++) {
+      if (state.emitters[i].age > 1) {
+        state.emitters.splice(i--, 1);
       }
     }
   };
@@ -215,28 +221,28 @@ const newBaddie = (gl, mesh) => {
 			z: .66,
 		  },
 		hitTime : 0,
-	};	
-	
+	};
+
 	addBlockToMesh(mesh, baddie.location.x, baddie.location.y, baddie.location.z, .5)
 	baddie.render = newMeshRenderer(gl, mesh);
-	
+
 	baddie.rfindPath = (l, r, c, goalr, goalc) => {
 		var p = [[0,0]];
 		return [0,0];
 	};
-	
+
 	baddie.findPath = (playerLocation) => {
-		var dx = playerLocation.x-baddie.location.x, 
-			dy = playerLocation.y-baddie.location.y, 
+		var dx = playerLocation.x-baddie.location.x,
+			dy = playerLocation.y-baddie.location.y,
 			dz = playerLocation.z-baddie.location.z,
 			adx = Math.abs(dx),
 			ady = Math.abs(dy),
 			adz = Math.abs(dz);
 		if(Math.floor(dy) == 0){ //same layer
-			
+
 		}
 	};
-	
+
 	let lastUpdate = 0;
 	baddie.update = (timestamp, playerLocation) => {
 		const dt = Math.min(timestamp - lastUpdate, 1000) / 1000;
@@ -245,11 +251,10 @@ const newBaddie = (gl, mesh) => {
 		const layer = Math.floor(baddie.location.y);
 		const row = Math.floor(baddie.location.z);
 		const col = Math.floor(baddie.location.x);
-		var dz, dx = baddie.rfindPath(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x));				
+		var dz, dx = baddie.rfindPath(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x));
 		//baddie.location.x += dx * dt;
 		//baddie.location.z += dz * dt;
 	};
-	
+
 	return baddie;
 };
-

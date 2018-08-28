@@ -131,9 +131,10 @@ const shaders = {
         b = cos(angle3) * sin(angle4);
         c = cos(angle4);
         vec4 pos = scale * rotateY * rotateX * rotateZ * vec4(a_position, 1);
-        pos.x += 8.0 * pow(age, 0.5) * a;
-        pos.z += 8.0 * pow(age, 0.5) * b;
-        pos.y += 8.0 * pow(age, 0.5) * c - pow(age * 2.0, 2.0);
+        float velocity = (0.5 * a_entropy + 0.5) * 8.0 * pow(age, 0.5);
+        pos.x += velocity * a;
+        pos.z += velocity * b;
+        pos.y += velocity * c - pow(age * 1.5, 2.0);
         gl_Position = u_transform * pos;
       }
     `,
@@ -148,7 +149,7 @@ const shaders = {
 
       void main() {
         float n = 3.0;
-        vec3 abc = vec3(fract(v_entropy * 11.0), fract(v_entropy * 19.0), fract(v_entropy * 31.0));
+        vec3 abc = vec3(fract(v_entropy * 16.0), fract(v_entropy * 256.0), fract(v_entropy * 4096.0));
         vec3 rgb = u_color * abc;
         vec3 xyz = floor(rgb * (n - 0.001));
         float idx = (xyz.x * n * n + xyz.y * n + xyz.z + 0.5) / (n * n * n);
