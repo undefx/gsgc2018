@@ -201,7 +201,7 @@ const newGame = () => {
       }
     }
     for (let i = 0; i < state.emitters.length; i++) {
-      if (state.emitters[i].age > 1) {
+      if (state.emitters[i].state.age > 1) {
         state.emitters.splice(i--, 1);
       }
     }
