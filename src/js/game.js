@@ -206,3 +206,50 @@ const newGame = () => {
     update: update,
   };
 };
+
+const newBaddie = (gl, mesh) => {
+	const baddie = {
+		location: {
+			x: .66,
+			y: .5,
+			z: .66,
+		  },
+		hitTime : 0,
+	};	
+	
+	addBlockToMesh(mesh, baddie.location.x, baddie.location.y, baddie.location.z, .5)
+	baddie.render = newMeshRenderer(gl, mesh);
+	
+	baddie.rfindPath = (l, r, c, goalr, goalc) => {
+		var p = [[0,0]];
+		return [0,0];
+	};
+	
+	baddie.findPath = (playerLocation) => {
+		var dx = playerLocation.x-baddie.location.x, 
+			dy = playerLocation.y-baddie.location.y, 
+			dz = playerLocation.z-baddie.location.z,
+			adx = Math.abs(dx),
+			ady = Math.abs(dy),
+			adz = Math.abs(dz);
+		if(Math.floor(dy) == 0){ //same layer
+			
+		}
+	};
+	
+	let lastUpdate = 0;
+	baddie.update = (timestamp, playerLocation) => {
+		const dt = Math.min(timestamp - lastUpdate, 1000) / 1000;
+		lastUpdate = timestamp;
+		if(baddie.hitTime == 0) baddie.hitTime = timestamp;
+		const layer = Math.floor(baddie.location.y);
+		const row = Math.floor(baddie.location.z);
+		const col = Math.floor(baddie.location.x);
+		var dz, dx = baddie.rfindPath(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x));				
+		//baddie.location.x += dx * dt;
+		//baddie.location.z += dz * dt;
+	};
+	
+	return baddie;
+};
+

@@ -39,16 +39,17 @@ const newQuad = (gl, palette, texture, tex_x_offset, tex_x_num) => {
 };
 
 // Adds a new block (cube) to a static mesh.
-const addBlockToMesh = (mesh, dx, dy, dz) => {
+const addBlockToMesh = (mesh, dx, dy, dz, size) => {
   // vertices
-  const vRUF = [dx + 1, dy + 1, dz];
-  const vRUB = [dx + 1, dy + 1, dz + 1];
-  const vRDF = [dx + 1, dy, dz];
-  const vRDB = [dx + 1, dy, dz + 1];
-  const vLUF = [dx, dy + 1, dz];
-  const vLUB = [dx, dy + 1, dz + 1];
+  var s = size || 1;
+  const vRUF = [dx + s, dy + s, dz];
+  const vRUB = [dx + s, dy + s, dz + s];
+  const vRDF = [dx + s, dy, dz];
+  const vRDB = [dx + s, dy, dz + s];
+  const vLUF = [dx, dy + s, dz];
+  const vLUB = [dx, dy + s, dz + s];
   const vLDF = [dx, dy, dz];
-  const vLDB = [dx, dy, dz + 1];
+  const vLDB = [dx, dy, dz + s];
   flatten([
     // front
     vLDF, vRUF, vLUF,
@@ -246,6 +247,10 @@ const setup = () => {
   const orbBlockType = newBlockType(orbTexture);
   addBlockToMesh(orbBlockType, -0.5, -0.5, -0.5);
   orbBlockType.render = newMeshRenderer(gl, orbBlockType);
+  
+  const baddieTexture = uploadTexture(gl, solidTexture(0.9, 0.2, 0.2));//lance
+  var baddieMesh = newBlockType(baddieTexture);
+  var baddie = newBaddie(gl, baddieMesh);//lance
 
   const staticMeshes = {
     // Ceiling
@@ -285,6 +290,7 @@ const setup = () => {
       requestAnimationFrame(render);
     }
     game.update(timestamp);
+	baddie.update(timestamp, game.state.player.location);
 
     const frameLag = timestamp - lastTimestamp;
     avgLag = 0.98 * avgLag + 0.02 * frameLag;
@@ -313,6 +319,11 @@ const setup = () => {
         staticMeshes[name].render(transform);
       }
     });
+	var bt = matmul(transform, translate(
+        baddie.location.x,
+        baddie.location.y,
+        baddie.location.z));
+	baddie.render(bt);
     if (game.state.orb.active) {
       let orbTransform = matmul(transform, translate(
         game.state.orb.position.x,
