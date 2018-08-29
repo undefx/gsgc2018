@@ -216,16 +216,16 @@ const newGame = () => {
 const newBaddie = (gl, mesh) => {
 	const baddie = {
 		location: {
-			x: 1.75,
-			y: .75,
-			z: .75,
+			x: 2.5,
+			y: 1.5,
+			z: 2.5,
 		  },
 		hitTime : 0,
-	};	
-	
-	addBlockToMesh(mesh, baddie.location.x, baddie.location.y, baddie.location.z)
+	};
+
+	addBlockToMesh(mesh, -0.5, -0.5, -0.5);
 	baddie.render = newMeshRenderer(gl, mesh);
-	
+
 	baddie.findFirstChoice = (k, meta) =>{
 		var actions = [];
 		while(meta[k][0] != null){
@@ -234,8 +234,16 @@ const newBaddie = (gl, mesh) => {
 		}
 		return actions[actions.length-1];
 	};
-	
+
 	baddie.bfs = (l, r, c, goalr, goalc) => {
+    const [r0, c0, goalr0, goalc0] = [r, c, goalr, goalc];
+    [r, c, goalr, goalc] = [Math.floor(r), Math.floor(c), Math.floor(goalr), Math.floor(goalc)];
+
+    const fractMove = (dz, dx) => {
+      // If floor(player - baddie) is zero, go the rest of the way directly.
+      return [dz == 0 ? (goalr0 - r0) : dz, dx == 0 ? (goalc0 - c0) : dx];
+    };
+
 		var open = [], closed = [], meta = {};
 		var root = r+'|'+c;
 		meta[root] = [null, null];
@@ -247,7 +255,7 @@ const newBaddie = (gl, mesh) => {
 			r = parseInt(root.charAt(0));
 			c = parseInt(root.charAt(2));
 			if(r == goalr && c == goalc){
-				return baddie.findFirstChoice(root, meta);
+				return fractMove(...baddie.findFirstChoice(root, meta));
 			}
 			if(map.blocks[l][r][c] != 0){
 				closed.push(root);
@@ -263,27 +271,27 @@ const newBaddie = (gl, mesh) => {
 			});
 			closed.push(root);
 		}
-		return [0,0];
+		return fractMove(0, 0);
 	};
-	
+
 	let lastUpdate = 0;
 	baddie.update = (timestamp, playerLocation) => {
 		const dt = Math.min(timestamp - lastUpdate, 1000) / 1000;
 		lastUpdate = timestamp;
 		if(baddie.hitTime == 0) baddie.hitTime = timestamp;
-		const layer = Math.ceil(baddie.location.y);
-		const row = Math.ceil(baddie.location.z);
-		const col = Math.ceil(baddie.location.x);
+		const layer = Math.floor(baddie.location.y);
+		const row = baddie.location.z;
+		const col = baddie.location.x;
 		//todo: keep whole path and reuse if player location hasn't changed.
-		var dl = baddie.bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x));	
-		baddie.location.x += dl[1] * dt;
-		baddie.location.z += dl[0] * dt;
+  	var dl = baddie.bfs(layer, row, col, playerLocation.z, playerLocation.x);
+  	baddie.location.x += dl[1] * dt;
+  	baddie.location.z += dl[0] * dt;
 		//attempting to keep him in the middle of the isle hes in
 		// if(dl[1] == 0 && dl[0] != 0)
 			// baddie.location.x = Math.floor(baddie.location.x) + .66;
 		// if(dl[0] == 0 && dl[1] != 0)
 			// baddie.location.z = Math.floor(baddie.location.z) + .66;
 	};
-	
+
 	return baddie;
 };
