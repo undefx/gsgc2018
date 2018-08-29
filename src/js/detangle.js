@@ -323,10 +323,11 @@ const setup = () => {
     });
 
     var bt = matmul(transform, translate(
-    baddie.location.x,
-    baddie.location.y,
-    baddie.location.z));
-    baddie.render(bt);
+        baddie.location.x,
+        baddie.location.y,
+        baddie.location.z));
+	bt = matmul(bt, scale(0.5, 0.5, 0.5));
+	baddie.render(bt);
 
     game.state.orbs.forEach((orb) => {
       let orbTransform = matmul(transform, translate(

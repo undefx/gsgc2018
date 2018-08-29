@@ -216,45 +216,74 @@ const newGame = () => {
 const newBaddie = (gl, mesh) => {
 	const baddie = {
 		location: {
-			x: .66,
-			y: .5,
-			z: .66,
+			x: 1.75,
+			y: .75,
+			z: .75,
 		  },
 		hitTime : 0,
-	};
-
-	addBlockToMesh(mesh, baddie.location.x, baddie.location.y, baddie.location.z, .5)
+	};	
+	
+	addBlockToMesh(mesh, baddie.location.x, baddie.location.y, baddie.location.z)
 	baddie.render = newMeshRenderer(gl, mesh);
-
-	baddie.rfindPath = (l, r, c, goalr, goalc) => {
-		var p = [[0,0]];
+	
+	baddie.findFirstChoice = (k, meta) =>{
+		var actions = [];
+		while(meta[k][0] != null){
+			actions.push(meta[k][1]);
+			k = meta[k][0];
+		}
+		return actions[actions.length-1];
+	};
+	
+	baddie.bfs = (l, r, c, goalr, goalc) => {
+		var open = [], closed = [], meta = {};
+		var root = r+'|'+c;
+		meta[root] = [null, null];
+		if(r != goalr || c != goalc)
+			open.push(root);
+		var neighbors = [[-1, 0], [1, 0], [0, -1], [0, 1]]; //up, down, left, right (just like collisions)
+		while (open.length > 0){
+			root = open.shift();
+			r = parseInt(root.charAt(0));
+			c = parseInt(root.charAt(2));
+			if(r == goalr && c == goalc){
+				return baddie.findFirstChoice(root, meta);
+			}
+			if(map.blocks[l][r][c] != 0){
+				closed.push(root);
+				continue;
+			}
+			var collisions = getCollisions(map.blocks, l, r, c);
+			neighbors.forEach((n, i) => {
+				var k = (r+n[0]) + '|' + (c+n[1]);
+				if(!closed.includes(k) && !open.includes(k) && !collisions[i]){
+					meta[k] = [root, n];
+					open.push(k);
+				}
+			});
+			closed.push(root);
+		}
 		return [0,0];
 	};
-
-	baddie.findPath = (playerLocation) => {
-		var dx = playerLocation.x-baddie.location.x,
-			dy = playerLocation.y-baddie.location.y,
-			dz = playerLocation.z-baddie.location.z,
-			adx = Math.abs(dx),
-			ady = Math.abs(dy),
-			adz = Math.abs(dz);
-		if(Math.floor(dy) == 0){ //same layer
-
-		}
-	};
-
+	
 	let lastUpdate = 0;
 	baddie.update = (timestamp, playerLocation) => {
 		const dt = Math.min(timestamp - lastUpdate, 1000) / 1000;
 		lastUpdate = timestamp;
 		if(baddie.hitTime == 0) baddie.hitTime = timestamp;
-		const layer = Math.floor(baddie.location.y);
-		const row = Math.floor(baddie.location.z);
-		const col = Math.floor(baddie.location.x);
-		var dz, dx = baddie.rfindPath(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x));
-		//baddie.location.x += dx * dt;
-		//baddie.location.z += dz * dt;
+		const layer = Math.ceil(baddie.location.y);
+		const row = Math.ceil(baddie.location.z);
+		const col = Math.ceil(baddie.location.x);
+		//todo: keep whole path and reuse if player location hasn't changed.
+		var dl = baddie.bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x));	
+		baddie.location.x += dl[1] * dt;
+		baddie.location.z += dl[0] * dt;
+		//attempting to keep him in the middle of the isle hes in
+		// if(dl[1] == 0 && dl[0] != 0)
+			// baddie.location.x = Math.floor(baddie.location.x) + .66;
+		// if(dl[0] == 0 && dl[1] != 0)
+			// baddie.location.z = Math.floor(baddie.location.z) + .66;
 	};
-
+	
 	return baddie;
 };
