@@ -381,11 +381,28 @@ const setup = () => {
     // 2d: user interface
     gl.disable(gl.DEPTH_TEST);
     transform = identity();
-    transform = matmul(transform, translate(-1, -1, 0));
+    transform = matmul(transform, translate(-1, 1, 0));
     transform = matmul(transform, scale(6 / 360, 24 / 400, 1));
-    transform = matmul(transform, translate(1, 1, 0));
+    transform = matmul(transform, translate(1, -1, 0));
     const fps = 1 / (avgLag * 0.001);
     renderString(gl, 'fps: ' + Math.round(fps), transform);
+
+    transform = identity();
+    const solidBlueTextureId = uploadTexture(gl, solidTexture(0.5, 0.5, 0.7));
+    const solidRedTextureId = uploadTexture(gl, solidTexture(1, 0, 0));
+    const healthBar = newQuad(gl, paletteTexId, solidBlueTextureId, 0, 1);
+    const healthMissing = newQuad(gl, paletteTexId, solidRedTextureId, 0, 1);
+    transform = identity();
+    transform = matmul(transform, scale(1 / 2, 1 / 20, 1));
+    transform = matmul(transform, translate(0, -19, 0));
+    healthMissing(gl, transform);
+    const healthBarWidth = game.state.player.health / 5;
+    const missing = 5 - game.state.player.health;
+    transform = identity();
+    transform = matmul(transform, translate(missing * -0.1, 0, 0));
+    transform = matmul(transform, scale(healthBarWidth / 2, 1 / 20, 1));
+    transform = matmul(transform, translate(0, -19, 0));
+    healthBar(gl, transform);
   };
 
   requestAnimationFrame(render);

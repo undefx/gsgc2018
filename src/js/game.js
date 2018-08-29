@@ -92,6 +92,7 @@ const newGame = () => {
       direction: map.start_direction,
       altitude: 0,
       fallSpeed: 0,
+      health: 4,
     },
     input: {
       forward: false,
@@ -206,6 +207,9 @@ const newGame = () => {
         state.emitters.splice(i--, 1);
       }
     }
+
+    // TODO: this is just a demo
+    state.player.health = (Math.sin(timestamp * 0.0005 * 6.28) + 1.0) / 2.0 * 5.0;
   };
 
   return {
