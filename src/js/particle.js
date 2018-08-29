@@ -46,6 +46,8 @@ const spawnEmitter = (emitter, x, y, z) => {
     age: 0,
   };
 
+  const nonce = Math.random();
+
   const render = (transform, timestamp, game) => {
     const delta = [
       game.state.player.location.x - x,
@@ -55,6 +57,7 @@ const spawnEmitter = (emitter, x, y, z) => {
     emitter.renderer.data.uniform.mat4.transform = matmul(transform, model);
     emitter.renderer.data.uniform.vec3.delta = delta;
     emitter.renderer.data.uniform.float.age = state.age;
+    emitter.renderer.data.uniform.float.nonce = nonce;
     emitter.render();
   };
 
