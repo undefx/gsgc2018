@@ -82,6 +82,7 @@ const getPositionY = (x, z, y, type) => {
 // Initialize a new game.
 const newGame = () => {
   const state = {
+    level: 1,
     player: {
       location: {
         x: map.start_position.x,
@@ -232,11 +233,11 @@ const newBaddie = (gl, mesh) => {
 			actions.push(meta[k][1]);
 			k = meta[k][0];
 		}
-		console.log(meta);
-		console.log(actions);
+		//console.log(meta);
+		//console.log(actions);
 		return actions[actions.length-1];
 	};
-	
+
 	baddie.bfs = (l, r, c, goalr, goalc) => {
 		var open = [], closed = [], meta = {};
 		var root = r+'|'+c;
@@ -250,7 +251,7 @@ const newBaddie = (gl, mesh) => {
 			r = parseInt(rt.substring(0, i));
 			c = parseInt(rt.substring(i+1));
 			if(r == goalr && c == goalc){
-				console.log(r + ' ' + c + ' ' + goalr + ' ' + goalc + ' ' + rt);
+				//console.log(r + ' ' + c + ' ' + goalr + ' ' + goalc + ' ' + rt);
 				return baddie.findFirstChoice(rt, meta);
 			}
 			if(map.blocks[l][r][c] != 0){
@@ -280,7 +281,7 @@ const newBaddie = (gl, mesh) => {
 		const row = Math.floor(baddie.location.z);
 		const col = Math.floor(baddie.location.x);
 		//todo: keep whole path and reuse if player location hasn't changed.
-		console.log(baddie.shortGoal);
+		//console.log(baddie.shortGoal);
 		if(baddie.shortGoal[0] == null){
 			var dl = baddie.bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x));
 			//direction to go
@@ -292,14 +293,14 @@ const newBaddie = (gl, mesh) => {
 		}
 		baddie.location.x += baddie.shortGoal[1] * dt;
 		baddie.location.z += baddie.shortGoal[0] * dt;
-		console.log(baddie.shortGoal);
-		console.log(baddie.location);
-		if((baddie.shortGoal[1] != 0 && 
+		//console.log(baddie.shortGoal);
+		//console.log(baddie.location);
+		if((baddie.shortGoal[1] != 0 &&
 				((baddie.shortGoal[1] > 0 && baddie.location.x > baddie.shortGoal[3]) ||
-				 (baddie.shortGoal[1] < 0 && baddie.location.x < baddie.shortGoal[3]))) || 
-			(baddie.shortGoal[0] != 0 && 
+				 (baddie.shortGoal[1] < 0 && baddie.location.x < baddie.shortGoal[3]))) ||
+			(baddie.shortGoal[0] != 0 &&
 				((baddie.shortGoal[0] > 0 && baddie.location.z > baddie.shortGoal[2]) ||
-				 (baddie.shortGoal[0] < 0 && baddie.location.z < baddie.shortGoal[2]))) || 
+				 (baddie.shortGoal[0] < 0 && baddie.location.z < baddie.shortGoal[2]))) ||
 			(baddie.shortGoal[1] == 0 && baddie.shortGoal[0] == 0))
 			baddie.shortGoal[0] = baddie.shortGoal[1] = null;
 		//attempting to keep him in the middle of the isle hes in

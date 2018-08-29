@@ -12,7 +12,7 @@ const map = {
   },
 
   // The direction the player should face when spawned.
-  start_direction: Math.PI * 0.25,
+  start_direction: Math.PI * 1,
 
   // A 3-dimensional array that explicitly lists the type of each block in the
   // playable area. The map is indexed by "layer" (y-axis), "row" (z-axis), and
@@ -123,3 +123,6 @@ for(var k = 1; k < layers*2+1; k+=2){
 		}
 	}
 }
+
+// Level indicator block.
+map.blocks[1][0][1] = 5;

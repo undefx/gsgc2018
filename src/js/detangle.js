@@ -185,7 +185,33 @@ const setup = () => {
     }
   };
 
+  const renderTextGrid = (gl, lines) => {
+    return renderToTexture(gl, 192, 256, () => {
+      let transform = identity();
+      transform = matmul(transform, translate(-0.5, -0.5, 0));
+      transform = matmul(transform, scale(1 / 32, -1 / 32, 1));
+      transform = matmul(transform, translate(1, -1, 0));
+      for (let i = 0; i < lines.length; i++) {
+        renderString(gl, lines[i], transform);
+        transform = matmul(transform, translate(0, -2, 0));
+      }
+    });
+  };
+
   const game = newGame();
+
+  const levelString = '' + game.state.level;
+  const renderedTextureId = renderTextGrid(gl, [
+    '+              +','',
+    'level:          '.slice(0, 16 - levelString.length) + levelString,'',
+    'move:    w/a/s/d','',
+    'jump:      space','',
+    'shoot:     click','','',
+    '   objective:',
+    ' get out alive','',
+    '   good luck!','',
+    '+              +',
+  ]);
 
   canvas.addEventListener('keydown', (e) => {
     if (keyMap.hasOwnProperty(e.key)) {
@@ -263,6 +289,8 @@ const setup = () => {
     3: newBlockType(uploadTexture(gl, randomTexture(8, 0.5, 0.5, 0.3))),
     // Walls
     4: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7))),
+    // Level indicator block
+    5: newBlockType(renderedTextureId),
     // Ramps (N, E, S, W)
     'ramps': rampBlockType,
   };
