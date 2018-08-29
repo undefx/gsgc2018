@@ -216,9 +216,9 @@ const newGame = () => {
 const newBaddie = (gl, mesh) => {
 	const baddie = {
 		location: {
-			x: 2.5,
+			x: 7.5,
 			y: 1.5,
-			z: 2.5,
+			z: 1.5,
 		  },
 		hitTime : 0,
 	};
@@ -227,23 +227,17 @@ const newBaddie = (gl, mesh) => {
 	baddie.render = newMeshRenderer(gl, mesh);
 
 	baddie.findFirstChoice = (k, meta) =>{
-		var actions = [];
+		var actions = [[0,0]];
 		while(meta[k][0] != null){
 			actions.push(meta[k][1]);
 			k = meta[k][0];
 		}
+		console.log(meta);
+		console.log(actions);
 		return actions[actions.length-1];
 	};
-
+	
 	baddie.bfs = (l, r, c, goalr, goalc) => {
-    const [r0, c0, goalr0, goalc0] = [r, c, goalr, goalc];
-    [r, c, goalr, goalc] = [Math.floor(r), Math.floor(c), Math.floor(goalr), Math.floor(goalc)];
-
-    const fractMove = (dz, dx) => {
-      // If floor(player - baddie) is zero, go the rest of the way directly.
-      return [dz == 0 ? (goalr0 - r0) : dz, dx == 0 ? (goalc0 - c0) : dx];
-    };
-
 		var open = [], closed = [], meta = {};
 		var root = r+'|'+c;
 		meta[root] = [null, null];
@@ -251,41 +245,63 @@ const newBaddie = (gl, mesh) => {
 			open.push(root);
 		var neighbors = [[-1, 0], [1, 0], [0, -1], [0, 1]]; //up, down, left, right (just like collisions)
 		while (open.length > 0){
-			root = open.shift();
-			r = parseInt(root.charAt(0));
-			c = parseInt(root.charAt(2));
+			var rt = open.shift();
+			var i = rt.indexOf('|');
+			r = parseInt(rt.substring(0, i));
+			c = parseInt(rt.substring(i+1));
 			if(r == goalr && c == goalc){
-				return fractMove(...baddie.findFirstChoice(root, meta));
+				console.log(r + ' ' + c + ' ' + goalr + ' ' + goalc + ' ' + rt);
+				return baddie.findFirstChoice(rt, meta);
 			}
 			if(map.blocks[l][r][c] != 0){
-				closed.push(root);
+				closed.push(rt);
 				continue;
 			}
 			var collisions = getCollisions(map.blocks, l, r, c);
 			neighbors.forEach((n, i) => {
 				var k = (r+n[0]) + '|' + (c+n[1]);
 				if(!closed.includes(k) && !open.includes(k) && !collisions[i]){
-					meta[k] = [root, n];
+					meta[k] = [rt, n];
 					open.push(k);
 				}
 			});
-			closed.push(root);
+			closed.push(rt);
 		}
-		return fractMove(0, 0);
+		return [0,0];
 	};
 
+	baddie.shortGoal = [null, null, null, null, null, null];
 	let lastUpdate = 0;
 	baddie.update = (timestamp, playerLocation) => {
 		const dt = Math.min(timestamp - lastUpdate, 1000) / 1000;
 		lastUpdate = timestamp;
 		if(baddie.hitTime == 0) baddie.hitTime = timestamp;
 		const layer = Math.floor(baddie.location.y);
-		const row = baddie.location.z;
-		const col = baddie.location.x;
+		const row = Math.floor(baddie.location.z);
+		const col = Math.floor(baddie.location.x);
 		//todo: keep whole path and reuse if player location hasn't changed.
-  	var dl = baddie.bfs(layer, row, col, playerLocation.z, playerLocation.x);
-  	baddie.location.x += dl[1] * dt;
-  	baddie.location.z += dl[0] * dt;
+		console.log(baddie.shortGoal);
+		if(baddie.shortGoal[0] == null){
+			var dl = baddie.bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x));
+			//direction to go
+			baddie.shortGoal[0] = dl[0];
+			baddie.shortGoal[1] = dl[1];
+			//location to get to
+			baddie.shortGoal[3] = col + baddie.shortGoal[1]*.5;//.5 is to keep him in center of row/col
+			baddie.shortGoal[2] = row + baddie.shortGoal[0]*.5;
+		}
+		baddie.location.x += baddie.shortGoal[1] * dt;
+		baddie.location.z += baddie.shortGoal[0] * dt;
+		console.log(baddie.shortGoal);
+		console.log(baddie.location);
+		if((baddie.shortGoal[1] != 0 && 
+				((baddie.shortGoal[1] > 0 && baddie.location.x > baddie.shortGoal[3]) ||
+				 (baddie.shortGoal[1] < 0 && baddie.location.x < baddie.shortGoal[3]))) || 
+			(baddie.shortGoal[0] != 0 && 
+				((baddie.shortGoal[0] > 0 && baddie.location.z > baddie.shortGoal[2]) ||
+				 (baddie.shortGoal[0] < 0 && baddie.location.z < baddie.shortGoal[2]))) || 
+			(baddie.shortGoal[1] == 0 && baddie.shortGoal[0] == 0))
+			baddie.shortGoal[0] = baddie.shortGoal[1] = null;
 		//attempting to keep him in the middle of the isle hes in
 		// if(dl[1] == 0 && dl[0] != 0)
 			// baddie.location.x = Math.floor(baddie.location.x) + .66;
