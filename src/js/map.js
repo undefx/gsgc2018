@@ -19,6 +19,10 @@ const map = {
   // "col" (x-axis).
   // TODO: numbers shouldn't be hard-coded
   blocks: [],
+
+  // A 3-dimensional array that contains information about live game objects
+  // that occupy each block.
+  blockInfo: [],
 };
 
 function rand(min, max){
@@ -126,3 +130,19 @@ for(var k = 1; k < layers*2+1; k+=2){
 
 // Level indicator block.
 map.blocks[1][0][1] = 5;
+
+// Initialze block info.
+for (let l = 0; l < map.blocks.length; l++) {
+  const layer = [];
+  for (let r = 0; r < map.blocks[0].length; r++) {
+    const row = [];
+    for (let c = 0; c < map.blocks[0][0].length; c++) {
+      // Things that can potentially occupy this block.
+      row.push({
+        powerup: null,
+      });
+    }
+    layer.push(row);
+  }
+  map.blockInfo.push(layer);
+}

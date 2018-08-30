@@ -65,6 +65,7 @@ const flatten = (arrays) => {
   return result;
 };
 
+// Tracks runtime stats for debugging.
 const newTelemetry = () => {
   const counters = {};
   const get = (name, default_) => {

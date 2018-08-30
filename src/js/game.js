@@ -126,6 +126,11 @@ const newGame = () => {
         z: orbSpeed * cd * ca,
       },
     };
+    orb.explode = (emitterSpawns) => {
+      playNote(220);
+      orb.active = false;
+      emitterSpawns.push([orb.position.x, orb.position.y, orb.position.z]);
+    };
     state.orbs.push(orb);
   };
 
@@ -189,9 +194,7 @@ const newGame = () => {
       const layer = Math.floor(orb.position.y);
       const row = Math.floor(orb.position.z);
       if (map.blocks[layer][row][col] != 0) {
-        playNote(220);
-        orb.active = false;
-        state.emitterSpawns.push([orb.position.x, orb.position.y, orb.position.z]);
+        orb.explode(state.emitterSpawns);
       }
     });
     state.emitters.forEach((emitter) => {
@@ -231,6 +234,8 @@ const newBaddie = (gl, mesh) => {
 			z: z,
 		  },
 		hitTime : 0,
+    hitBox: 0.25,
+    health: 3,
 	};
 
 	addBlockToMesh(mesh, -0.5, -0.5, -0.5);
@@ -311,6 +316,12 @@ const newBaddie = (gl, mesh) => {
 			(baddie.shortGoal[1] == 0 && baddie.shortGoal[0] == 0))
 			baddie.shortGoal[0] = baddie.shortGoal[1] = null;
 	};
+
+  // Things that happen when the baddie dies.
+  baddie.explode = (emitterSpawns) => {
+    playNote(370);
+    emitterSpawns.push([baddie.location.x, baddie.location.y, baddie.location.z]);
+  };
 
 	return baddie;
 };

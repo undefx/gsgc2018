@@ -281,8 +281,9 @@ const setup = () => {
   const baddieTexture = uploadTexture(gl, solidTexture(0.9, 0.2, 0.2));//lance
   var baddieMesh = newBlockType(baddieTexture);
   var baddies = [];
-  for(var b = 0; b < 10; b++)
-	baddies.push(newBaddie(gl, baddieMesh));
+  for(var b = 0; b < 10; b++) {
+	  baddies.push(newBaddie(gl, baddieMesh));
+  }
 
   // Health bar
   const healthBlueTextureId = uploadTexture(gl, solidTexture(0.5, 0.5, 0.7));
@@ -345,6 +346,32 @@ const setup = () => {
   		b.update(timestamp, game.state.player.location);
   	});
     telemetry.blend('update_baddies', performance.now() - time0);
+
+    time0 = performance.now();
+  	baddies.forEach((bad) => {
+      const size = bad.hitBox;
+      game.state.orbs.forEach((orb) => {
+        const dx = bad.location.x - orb.position.x;
+        const dy = bad.location.y - orb.position.y;
+        const dz = bad.location.z - orb.position.z;
+        if (Math.abs(dx) < size && Math.abs(dy) < size && Math.abs(dz) < size) {
+          // Nice shot.
+          orb.explode(game.state.emitterSpawns);
+          bad.health -= 1;
+          if (bad.health <= 0) {
+            bad.explode(game.state.emitterSpawns);
+          } else {
+            playNote(392);
+          }
+        }
+      });
+  	});
+    for (let i = 0; i < baddies.length; i++) {
+      if (baddies[i].health <= 0) {
+        baddies.splice(i--, 1);
+      }
+    }
+    telemetry.blend('update_attack', performance.now() - time0);
 
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clearColor(1, 1, 1, 1);
