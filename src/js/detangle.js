@@ -290,6 +290,10 @@ const setup = () => {
   const healthPresent = newQuad(gl, paletteTexId, healthBlueTextureId, 0, 1);
   const healthMissing = newQuad(gl, paletteTexId, healthRedTextureId, 0, 1);
 
+  // Crosshairs
+  const crosshairTextureId = uploadTexture(gl, solidTexture(0.8, 0.8, 0.8));
+  const crosshairQuad = newQuad(gl, paletteTexId, crosshairTextureId, 0, 1);
+
   const staticMeshes = {
     // Ceiling
     1: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0, 0))),
@@ -408,15 +412,19 @@ const setup = () => {
     // 2d: user interface
     gl.disable(gl.DEPTH_TEST);
 
-    time0 = performance.now();
-    transform = identity();
-    transform = matmul(transform, translate(-1, 1, 0));
-    transform = matmul(transform, scale(6 / 360, 24 / 400, 1));
-    transform = matmul(transform, translate(1, -1, 0));
-    const fps = 1 / (telemetry.get('frame_lag', 1000) * 0.001);
-    renderString(gl, 'fps: ' + Math.round(fps), transform);
-    telemetry.blend('render_fps', performance.now() - time0);
+    // FPS
+    if (DEBUG) {
+      time0 = performance.now();
+      transform = identity();
+      transform = matmul(transform, translate(-1, 1, 0));
+      transform = matmul(transform, scale(6 / 360, 24 / 400, 1));
+      transform = matmul(transform, translate(1, -1, 0));
+      const fps = 1 / (telemetry.get('frame_lag', 1000) * 0.001);
+      renderString(gl, 'fps: ' + Math.round(fps), transform);
+      telemetry.blend('render_fps', performance.now() - time0);
+    }
 
+    // Health bar
     time0 = performance.now();
     transform = identity();
     transform = matmul(transform, scale(1 / 2, 1 / 20, 1));
@@ -431,10 +439,25 @@ const setup = () => {
     healthPresent(gl, transform);
     telemetry.blend('render_health', performance.now() - time0);
 
-    telemetry.blend('log', 0);
-    if (telemetry.get('log') < 1) {
-      telemetry.log();
-      telemetry.add('log', 100);
+    // Crosshairs
+    time0 = performance.now();
+    for (let i = 0; i < 3; i++) {
+      transform = identity();
+      transform = matmul(transform, translate(-1 / 360, 0, 0));
+      transform = matmul(transform, rotate.z(i * Math.PI * 2 / 3));
+      transform = matmul(transform, scale(1 / 360, 1 / 100, 1));
+      transform = matmul(transform, translate(0, 2.2, 0));
+      crosshairQuad(gl, transform);
+    }
+    telemetry.blend('render_cross', performance.now() - time0);
+
+    // Telemetry debugging
+    if (DEBUG) {
+      telemetry.blend('log', 0);
+      if (telemetry.get('log') < 1) {
+        telemetry.log();
+        telemetry.add('log', 100);
+      }
     }
   };
 

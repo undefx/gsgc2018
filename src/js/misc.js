@@ -82,10 +82,6 @@ const newTelemetry = () => {
     counters[name] = (1 - weight) * get(name, value) + weight * value;
   };
   const log = () => {
-    if (!DEBUG) {
-      // Skip this in production.
-      return;
-    }
     Object.getOwnPropertyNames(counters).forEach((name) => {
       console.log(name, get(name));
     });
