@@ -220,7 +220,6 @@ const newGame = () => {
     update: update,
   };
 };
-
 const newBaddie = (gl, mesh) => {
 	var x=0,z=0;
 	while(map.blocks[1][Math.floor(z)][Math.floor(x)] != 0){
@@ -250,7 +249,7 @@ const newBaddie = (gl, mesh) => {
 		return actions[actions.length-1];
 	};
 	
-	baddie.bfs = (l, r, c, goalr, goalc) => {
+	baddie.bfs = (l, r, c, goalr, goalc, blockTypes) => {
 		var open = [], closed = [], meta = {};
 		var root = r+'|'+c;
 		meta[root] = [null, null];
@@ -264,6 +263,9 @@ const newBaddie = (gl, mesh) => {
 			c = parseInt(rt.substring(i+1));
 			if(r == goalr && c == goalc){
 				return baddie.findFirstChoice(rt, meta);
+			}
+			if(blockTypes.includes(map.blocks[l][r][c])){
+				return [l, r, c];
 			}
 			if(map.blocks[l][r][c] != 0){
 				closed.push(rt);
@@ -282,8 +284,47 @@ const newBaddie = (gl, mesh) => {
 		return [0,0];
 	};
 	
-	baddie.getGoal = (timestamp, playerLocation) => {
-		
+	baddie.getGoal = (timestamp, playerLocation, layer, row, col) => {
+		if(layer == Math.floor(playerLocation.y))
+			return baddie.bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x), []);
+		//otherwise, find nearest ramp.  
+		var lrc;
+		if(layer > Math.floor(playerLocation.y)){
+			lrc = baddie.bfs(layer-1, row, col, null, null, [6,7,8,9]);
+		}
+		//Find up ramp location
+		var lrc = baddie.bfs(layer, row, col, null, null, [6,7,8,9]);
+		//now find the block at the foot of the ramp
+		var r = map.blocks[lrc[0]][lrc[1]][lrc[2]];
+		var dr, dc;
+		if(r == 6){
+			dr = -1;
+			dc = 0;
+		}
+		else if(r == 7){
+			dr = 0;
+			dc = 1;
+		}
+		else if(r == 8){
+			dr = 1;
+			dc = 0;
+		}
+		else if(r == 9){
+			dr = 0;
+			dc = -1;
+		}
+		//if baddie is at foot of ramp, climb
+		if(row == lrc[1]+dr && col == lrc[2]+dc){
+			baddie.shortGoal[0] = dr*-1;
+			baddie.shortGoal[1] = dc*-1;
+			baddie.shortGoal[2] = row + 3 * baddie.shortGoal[0];
+			baddie.shortGoal[3] = col + 3 * baddie.shortGoal[1];
+			baddie.shortGoal[4] = baddie.location.y;
+			baddie.shortGoal[5] = baddie.location.y+2;
+			return null;
+		}
+		//else path to foot of ramp
+		return baddie.bfs(layer, row, col, lrc[1]+dr, lrc[2]+dc, []);
 	};
 
 	baddie.shortGoal = [null, null, null, null, null, null];
@@ -297,23 +338,31 @@ const newBaddie = (gl, mesh) => {
 		const col = Math.floor(baddie.location.x);
 		//todo: keep whole path and reuse if player location hasn't changed.
 		if(baddie.shortGoal[0] == null){
-			var dl = baddie.bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x));
-			//direction to go
-			baddie.shortGoal[0] = dl[0];
-			baddie.shortGoal[1] = dl[1];
-			//location to get to
-			baddie.shortGoal[3] = col + baddie.shortGoal[1]*.5;//.5 is to keep him in center of row/col
-			baddie.shortGoal[2] = row + baddie.shortGoal[0]*.5;//doesn't always work though...
+			var zx = baddie.getGoal(timestamp, playerLocation, layer, row, col);
+			if(zx != null){
+				//direction to go
+				baddie.shortGoal[0] = zx[0];
+				baddie.shortGoal[1] = zx[1];
+				//location to get to
+				baddie.shortGoal[3] = col + baddie.shortGoal[1]*.5;//.5 is to keep him in center of row/col
+				baddie.shortGoal[2] = row + baddie.shortGoal[0]*.5;//doesn't always work though...
+			}
 		}
 		baddie.location.x += baddie.shortGoal[1] * dt;
 		baddie.location.z += baddie.shortGoal[0] * dt;
-		if((baddie.shortGoal[1] != 0 && 
-				((baddie.shortGoal[1] > 0 && baddie.location.x > baddie.shortGoal[3]) ||
-				 (baddie.shortGoal[1] < 0 && baddie.location.x < baddie.shortGoal[3]))) || 
-			(baddie.shortGoal[0] != 0 && 
-				((baddie.shortGoal[0] > 0 && baddie.location.z > baddie.shortGoal[2]) ||
-				 (baddie.shortGoal[0] < 0 && baddie.location.z < baddie.shortGoal[2]))) || 
-			(baddie.shortGoal[1] == 0 && baddie.shortGoal[0] == 0))
+		if(baddie.shortGoal[4] != null){
+			baddie.location.y = baddie.shortGoal[4] + 
+				2*Math.abs(baddie.shortGoal[0]) * (3-Math.abs(baddie.shortGoal[2] - baddie.location.z))/3 +
+				2*Math.abs(baddie.shortGoal[1]) * (3-Math.abs(baddie.shortGoal[3] - baddie.location.x))/3;
+			if(baddie.location.y >= baddie.shortGoal[5])
+				baddie.shortGoal[4] = null;
+		}
+				
+		if((baddie.shortGoal[1] > 0 && baddie.location.x > baddie.shortGoal[3]) ||
+			   (baddie.shortGoal[1] < 0 && baddie.location.x < baddie.shortGoal[3]) || 
+			   (baddie.shortGoal[0] > 0 && baddie.location.z > baddie.shortGoal[2]) ||
+			   (baddie.shortGoal[0] < 0 && baddie.location.z < baddie.shortGoal[2]) || 
+			   (baddie.shortGoal[1] == 0 && baddie.shortGoal[0] == 0))
 			baddie.shortGoal[0] = baddie.shortGoal[1] = null;
 	};
 
