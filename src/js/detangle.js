@@ -278,7 +278,9 @@ const setup = () => {
 
   const baddieTexture = uploadTexture(gl, solidTexture(0.9, 0.2, 0.2));//lance
   var baddieMesh = newBlockType(baddieTexture);
-  var baddie = newBaddie(gl, baddieMesh);//lance
+  var baddies = [];
+  for(var b = 0; b < 10; b++)
+	baddies.push(newBaddie(gl, baddieMesh));
 
   const staticMeshes = {
     // Ceiling
@@ -320,7 +322,9 @@ const setup = () => {
       requestAnimationFrame(render);
     }
     game.update(timestamp);
-	baddie.update(timestamp, game.state.player.location);
+	baddies.forEach((b)=>{
+		b.update(timestamp, game.state.player.location);
+	});
 
     const frameLag = timestamp - lastTimestamp;
     avgLag = 0.98 * avgLag + 0.02 * frameLag;
@@ -350,13 +354,15 @@ const setup = () => {
       }
     });
 
-    let bt;
-    bt = matmul(transform, translate(
-        baddie.location.x,
-        baddie.location.y,
-        baddie.location.z));
-    bt = matmul(bt, scale(0.5, 0.5, 0.5));
-  	baddie.render(bt);
+    baddies.forEach((b)=>{
+		let bt;
+		bt = matmul(transform, translate(
+			b.location.x,
+			b.location.y,
+			b.location.z));
+		bt = matmul(bt, scale(0.5, 0.5, 0.5));
+		b.render(bt);
+	});
 
     game.state.orbs.forEach((orb) => {
       let orbTransform = matmul(transform, translate(

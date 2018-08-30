@@ -219,11 +219,16 @@ const newGame = () => {
 };
 
 const newBaddie = (gl, mesh) => {
+	var x=0,z=0;
+	while(map.blocks[1][Math.floor(z)][Math.floor(x)] != 0){
+		x = Math.floor(Math.random() * (map.blocks[0].length-2))+1.5;
+		z = Math.floor(Math.random() * (map.blocks[0].length-2))+1.5;
+	}
 	const baddie = {
 		location: {
-			x: 7.5,
+			x: x,
 			y: 1.5,
-			z: 1.5,
+			z: z,
 		  },
 		hitTime : 0,
 	};
@@ -237,11 +242,9 @@ const newBaddie = (gl, mesh) => {
 			actions.push(meta[k][1]);
 			k = meta[k][0];
 		}
-		//console.log(meta);
-		//console.log(actions);
 		return actions[actions.length-1];
 	};
-
+	
 	baddie.bfs = (l, r, c, goalr, goalc) => {
 		var open = [], closed = [], meta = {};
 		var root = r+'|'+c;
@@ -255,7 +258,6 @@ const newBaddie = (gl, mesh) => {
 			r = parseInt(rt.substring(0, i));
 			c = parseInt(rt.substring(i+1));
 			if(r == goalr && c == goalc){
-				//console.log(r + ' ' + c + ' ' + goalr + ' ' + goalc + ' ' + rt);
 				return baddie.findFirstChoice(rt, meta);
 			}
 			if(map.blocks[l][r][c] != 0){
@@ -274,6 +276,10 @@ const newBaddie = (gl, mesh) => {
 		}
 		return [0,0];
 	};
+	
+	baddie.getGoal = (timestamp, playerLocation) => {
+		
+	};
 
 	baddie.shortGoal = [null, null, null, null, null, null];
 	let lastUpdate = 0;
@@ -285,7 +291,6 @@ const newBaddie = (gl, mesh) => {
 		const row = Math.floor(baddie.location.z);
 		const col = Math.floor(baddie.location.x);
 		//todo: keep whole path and reuse if player location hasn't changed.
-		//console.log(baddie.shortGoal);
 		if(baddie.shortGoal[0] == null){
 			var dl = baddie.bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x));
 			//direction to go
@@ -293,25 +298,18 @@ const newBaddie = (gl, mesh) => {
 			baddie.shortGoal[1] = dl[1];
 			//location to get to
 			baddie.shortGoal[3] = col + baddie.shortGoal[1]*.5;//.5 is to keep him in center of row/col
-			baddie.shortGoal[2] = row + baddie.shortGoal[0]*.5;
+			baddie.shortGoal[2] = row + baddie.shortGoal[0]*.5;//doesn't always work though...
 		}
 		baddie.location.x += baddie.shortGoal[1] * dt;
 		baddie.location.z += baddie.shortGoal[0] * dt;
-		//console.log(baddie.shortGoal);
-		//console.log(baddie.location);
-		if((baddie.shortGoal[1] != 0 &&
+		if((baddie.shortGoal[1] != 0 && 
 				((baddie.shortGoal[1] > 0 && baddie.location.x > baddie.shortGoal[3]) ||
-				 (baddie.shortGoal[1] < 0 && baddie.location.x < baddie.shortGoal[3]))) ||
-			(baddie.shortGoal[0] != 0 &&
+				 (baddie.shortGoal[1] < 0 && baddie.location.x < baddie.shortGoal[3]))) || 
+			(baddie.shortGoal[0] != 0 && 
 				((baddie.shortGoal[0] > 0 && baddie.location.z > baddie.shortGoal[2]) ||
-				 (baddie.shortGoal[0] < 0 && baddie.location.z < baddie.shortGoal[2]))) ||
+				 (baddie.shortGoal[0] < 0 && baddie.location.z < baddie.shortGoal[2]))) || 
 			(baddie.shortGoal[1] == 0 && baddie.shortGoal[0] == 0))
 			baddie.shortGoal[0] = baddie.shortGoal[1] = null;
-		//attempting to keep him in the middle of the isle hes in
-		// if(dl[1] == 0 && dl[0] != 0)
-			// baddie.location.x = Math.floor(baddie.location.x) + .66;
-		// if(dl[0] == 0 && dl[1] != 0)
-			// baddie.location.z = Math.floor(baddie.location.z) + .66;
 	};
 
 	return baddie;
