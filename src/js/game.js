@@ -351,11 +351,16 @@ const newBaddie = (gl, mesh) => {
 		baddie.location.x += baddie.shortGoal[1] * dt;
 		baddie.location.z += baddie.shortGoal[0] * dt;
 		if(baddie.shortGoal[4] != null){
-			baddie.location.y = baddie.shortGoal[4] +
-				2*Math.abs(baddie.shortGoal[0]) * (3-Math.abs(baddie.shortGoal[2] - baddie.location.z))/3 +
-				2*Math.abs(baddie.shortGoal[1]) * (3-Math.abs(baddie.shortGoal[3] - baddie.location.x))/3;
-			if(baddie.location.y >= baddie.shortGoal[5])
+			var zratio = (3-Math.abs(baddie.shortGoal[2] - baddie.location.z))/2.9;
+			var xratio = (3-Math.abs(baddie.shortGoal[3] - baddie.location.x))/2.9;
+			if(baddie.location.y >= baddie.shortGoal[5] || zratio < 0 || xratio < 0){
 				baddie.shortGoal[4] = null;
+				baddie.location.y = Math.floor(baddie.location.y) + .5;
+			}
+			else
+				baddie.location.y = baddie.shortGoal[4] +
+					2*Math.abs(baddie.shortGoal[0]) * zratio +
+					2*Math.abs(baddie.shortGoal[1]) * xratio;
 		}
 
 		if((baddie.shortGoal[1] > 0 && baddie.location.x > baddie.shortGoal[3]) ||
