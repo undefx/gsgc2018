@@ -284,6 +284,12 @@ const setup = () => {
   for(var b = 0; b < 10; b++)
 	baddies.push(newBaddie(gl, baddieMesh));
 
+  // Health bar
+  const healthBlueTextureId = uploadTexture(gl, solidTexture(0.5, 0.5, 0.7));
+  const healthRedTextureId = uploadTexture(gl, solidTexture(1, 0, 0));
+  const healthPresent = newQuad(gl, paletteTexId, healthBlueTextureId, 0, 1);
+  const healthMissing = newQuad(gl, paletteTexId, healthRedTextureId, 0, 1);
+
   const staticMeshes = {
     // Ceiling
     1: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0, 0))),
@@ -413,11 +419,6 @@ const setup = () => {
 
     time0 = performance.now();
     transform = identity();
-    const solidBlueTextureId = uploadTexture(gl, solidTexture(0.5, 0.5, 0.7));
-    const solidRedTextureId = uploadTexture(gl, solidTexture(1, 0, 0));
-    const healthBar = newQuad(gl, paletteTexId, solidBlueTextureId, 0, 1);
-    const healthMissing = newQuad(gl, paletteTexId, solidRedTextureId, 0, 1);
-    transform = identity();
     transform = matmul(transform, scale(1 / 2, 1 / 20, 1));
     transform = matmul(transform, translate(0, -19, 0));
     healthMissing(gl, transform);
@@ -427,12 +428,11 @@ const setup = () => {
     transform = matmul(transform, translate(missing * -0.1, 0, 0));
     transform = matmul(transform, scale(healthBarWidth / 2, 1 / 20, 1));
     transform = matmul(transform, translate(0, -19, 0));
-    healthBar(gl, transform);
+    healthPresent(gl, transform);
     telemetry.blend('render_health', performance.now() - time0);
 
     telemetry.blend('log', 0);
     if (telemetry.get('log') < 1) {
-      // TODO: comment out in final version
       telemetry.log();
       telemetry.add('log', 100);
     }
