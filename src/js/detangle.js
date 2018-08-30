@@ -159,6 +159,8 @@ const keyMap = {
   ' ': 'jumping',
 };
 
+const telemetry = newTelemetry();
+
 
 const setup = () => {
   const canvas = document.getElementsByTagName('canvas')[0];
@@ -316,19 +318,23 @@ const setup = () => {
     staticMeshes[name].render = newMeshRenderer(gl, staticMeshes[name]);
   });
 
-  let lastTimestamp = 0, avgLag = 0;
+  let lastTimestamp = 0;
   const render = (timestamp) => {
     if (game.state.input.pointerLocked) {
       requestAnimationFrame(render);
     }
-    game.update(timestamp);
-	baddies.forEach((b)=>{
-		b.update(timestamp, game.state.player.location);
-	});
-
-    const frameLag = timestamp - lastTimestamp;
-    avgLag = 0.98 * avgLag + 0.02 * frameLag;
+    telemetry.blend('frame_lag', timestamp - lastTimestamp);
     lastTimestamp = timestamp;
+
+    let time0 = performance.now();
+    game.update(timestamp);
+    telemetry.blend('update_game', performance.now() - time0);
+
+    time0 = performance.now();
+  	baddies.forEach((b)=>{
+  		b.update(timestamp, game.state.player.location);
+  	});
+    telemetry.blend('update_baddies', performance.now() - time0);
 
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clearColor(1, 1, 1, 1);
@@ -336,6 +342,8 @@ const setup = () => {
 
     // 3d: game world
     gl.enable(gl.DEPTH_TEST);
+
+    time0 = performance.now();
     const aspect = canvas.clientWidth / canvas.clientHeight;
     const fov = 1.2 * Math.PI / 2;
     let transform = identity();
@@ -353,17 +361,21 @@ const setup = () => {
         staticMeshes[name].render(transform);
       }
     });
+    telemetry.blend('render_static', performance.now() - time0);
 
+    time0 = performance.now();
     baddies.forEach((b)=>{
-		let bt;
-		bt = matmul(transform, translate(
-			b.location.x,
-			b.location.y,
-			b.location.z));
-		bt = matmul(bt, scale(0.5, 0.5, 0.5));
-		b.render(bt);
-	});
+  		let bt;
+  		bt = matmul(transform, translate(
+  			b.location.x,
+  			b.location.y,
+  			b.location.z));
+  		bt = matmul(bt, scale(0.5, 0.5, 0.5));
+  		b.render(bt);
+  	});
+    telemetry.blend('render_baddies', performance.now() - time0);
 
+    time0 = performance.now();
     game.state.orbs.forEach((orb) => {
       let orbTransform = matmul(transform, translate(
         orb.position.x,
@@ -372,27 +384,34 @@ const setup = () => {
       orbTransform = matmul(orbTransform, scale(0.05, 0.05, 0.05));
       orbBlockType.render(orbTransform);
     });
+    telemetry.blend('render_orb', performance.now() - time0);
 
+    time0 = performance.now();
     if (game.state.emitterSpawns.length > 0) {
       game.state.emitterSpawns.forEach((xyz) => {
         game.state.emitters.push(spawnEmitter(baseEmitter, ...xyz));
       });
       game.state.emitterSpawns = [];
     }
-
     game.state.emitters.forEach((emitter) => {
       emitter.render(transform, timestamp, game);
     });
+    telemetry.blend('render_emitter', performance.now() - time0);
+
 
     // 2d: user interface
     gl.disable(gl.DEPTH_TEST);
+
+    time0 = performance.now();
     transform = identity();
     transform = matmul(transform, translate(-1, 1, 0));
     transform = matmul(transform, scale(6 / 360, 24 / 400, 1));
     transform = matmul(transform, translate(1, -1, 0));
-    const fps = 1 / (avgLag * 0.001);
+    const fps = 1 / (telemetry.get('frame_lag', 1000) * 0.001);
     renderString(gl, 'fps: ' + Math.round(fps), transform);
+    telemetry.blend('render_fps', performance.now() - time0);
 
+    time0 = performance.now();
     transform = identity();
     const solidBlueTextureId = uploadTexture(gl, solidTexture(0.5, 0.5, 0.7));
     const solidRedTextureId = uploadTexture(gl, solidTexture(1, 0, 0));
@@ -409,6 +428,14 @@ const setup = () => {
     transform = matmul(transform, scale(healthBarWidth / 2, 1 / 20, 1));
     transform = matmul(transform, translate(0, -19, 0));
     healthBar(gl, transform);
+    telemetry.blend('render_health', performance.now() - time0);
+
+    telemetry.blend('log', 0);
+    if (telemetry.get('log') < 1) {
+      // TODO: comment out in final version
+      telemetry.log();
+      telemetry.add('log', 100);
+    }
   };
 
   requestAnimationFrame(render);
