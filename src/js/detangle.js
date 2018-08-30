@@ -425,8 +425,8 @@ const setup = () => {
 
     time0 = performance.now();
     if (game.state.emitterSpawns.length > 0) {
-      game.state.emitterSpawns.forEach((xyz) => {
-        game.state.emitters.push(spawnEmitter(baseEmitter, ...xyz));
+      game.state.emitterSpawns.forEach((xyzs) => {
+        game.state.emitters.push(spawnEmitter(baseEmitter, ...xyzs));
       });
       game.state.emitterSpawns = [];
     }

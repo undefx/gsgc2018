@@ -37,7 +37,7 @@ const createEmitter = (gl, paletteTexId) => {
   };
 };
 
-const spawnEmitter = (emitter, x, y, z) => {
+const spawnEmitter = (emitter, x, y, z, size) => {
   let model = identity();
   model = matmul(model, translate(x, y, z));
   model = matmul(model, scale(1 / 8, 1 / 8, 1 / 8));
@@ -57,6 +57,7 @@ const spawnEmitter = (emitter, x, y, z) => {
     emitter.renderer.data.uniform.mat4.transform = matmul(transform, model);
     emitter.renderer.data.uniform.vec3.delta = delta;
     emitter.renderer.data.uniform.float.age = state.age;
+    emitter.renderer.data.uniform.float.size = size;
     emitter.renderer.data.uniform.float.nonce = nonce;
     emitter.render();
   };

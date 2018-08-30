@@ -81,6 +81,7 @@ const shaders = {
       uniform mat4 u_transform;
       uniform vec3 u_delta;
       uniform float u_age;
+      uniform float u_size;
       uniform float u_nonce;
       attribute vec3 a_position;
       attribute float a_entropy;
@@ -118,7 +119,7 @@ const shaders = {
           0, 0, 1, 0,
           0, 0, 0, 1
         );
-        float invAge = 1.0 / (1.0 + u_age * u_age * 9.0);
+        float invAge = u_size / (1.0 + u_age * u_age * 9.0);
         mat4 scale = mat4(
           invAge, 0, 0, 0,
           0, invAge, 0, 0,

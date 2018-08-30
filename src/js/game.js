@@ -129,7 +129,7 @@ const newGame = () => {
     orb.explode = (emitterSpawns) => {
       playNote(220);
       orb.active = false;
-      emitterSpawns.push([orb.position.x, orb.position.y, orb.position.z]);
+      emitterSpawns.push([orb.position.x, orb.position.y, orb.position.z, 1]);
     };
     state.orbs.push(orb);
   };
@@ -248,7 +248,7 @@ const newBaddie = (gl, mesh) => {
 		}
 		return actions[actions.length-1];
 	};
-	
+
 	baddie.bfs = (l, r, c, goalr, goalc, blockTypes) => {
 		var open = [], closed = [], meta = {};
 		var root = r+'|'+c;
@@ -283,11 +283,11 @@ const newBaddie = (gl, mesh) => {
 		}
 		return [0,0];
 	};
-	
+
 	baddie.getGoal = (timestamp, playerLocation, layer, row, col) => {
 		if(layer == Math.floor(playerLocation.y))
 			return baddie.bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x), []);
-		//otherwise, find nearest ramp.  
+		//otherwise, find nearest ramp.
 		var lrc;
 		if(layer > Math.floor(playerLocation.y)){
 			lrc = baddie.bfs(layer-1, row, col, null, null, [6,7,8,9]);
@@ -351,17 +351,17 @@ const newBaddie = (gl, mesh) => {
 		baddie.location.x += baddie.shortGoal[1] * dt;
 		baddie.location.z += baddie.shortGoal[0] * dt;
 		if(baddie.shortGoal[4] != null){
-			baddie.location.y = baddie.shortGoal[4] + 
+			baddie.location.y = baddie.shortGoal[4] +
 				2*Math.abs(baddie.shortGoal[0]) * (3-Math.abs(baddie.shortGoal[2] - baddie.location.z))/3 +
 				2*Math.abs(baddie.shortGoal[1]) * (3-Math.abs(baddie.shortGoal[3] - baddie.location.x))/3;
 			if(baddie.location.y >= baddie.shortGoal[5])
 				baddie.shortGoal[4] = null;
 		}
-				
+
 		if((baddie.shortGoal[1] > 0 && baddie.location.x > baddie.shortGoal[3]) ||
-			   (baddie.shortGoal[1] < 0 && baddie.location.x < baddie.shortGoal[3]) || 
+			   (baddie.shortGoal[1] < 0 && baddie.location.x < baddie.shortGoal[3]) ||
 			   (baddie.shortGoal[0] > 0 && baddie.location.z > baddie.shortGoal[2]) ||
-			   (baddie.shortGoal[0] < 0 && baddie.location.z < baddie.shortGoal[2]) || 
+			   (baddie.shortGoal[0] < 0 && baddie.location.z < baddie.shortGoal[2]) ||
 			   (baddie.shortGoal[1] == 0 && baddie.shortGoal[0] == 0))
 			baddie.shortGoal[0] = baddie.shortGoal[1] = null;
 	};
@@ -369,7 +369,7 @@ const newBaddie = (gl, mesh) => {
   // Things that happen when the baddie dies.
   baddie.explode = (emitterSpawns) => {
     playNote(370);
-    emitterSpawns.push([baddie.location.x, baddie.location.y, baddie.location.z]);
+    emitterSpawns.push([baddie.location.x, baddie.location.y, baddie.location.z, 5]);
   };
 
 	return baddie;
