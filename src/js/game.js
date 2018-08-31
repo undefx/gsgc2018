@@ -147,11 +147,12 @@ const newGame = () => {
       },
     };
     orb.explode = (emitterSpawns) => {
-      playNote(220);
+      audio.playDrum(250);
       orb.active = false;
       const [x, y, z] = getCoords(orb.position);
       emitterSpawns.push([x, y, z, 1]);
     };
+    audio.playDrum(500);
     state.orbs.push(orb);
   };
 
@@ -220,9 +221,9 @@ const newGame = () => {
         state.player.health = Math.min(state.player.health + 1, state.limits.health);
       } else if (powerup == powerupTypes.exit) {
         // TODO: next level stuff...
-        playNote(440);
-        setTimeout(() => playNote(554), 200);
-        setTimeout(() => playNote(659), 400);
+        audio.playNote(440);
+        setTimeout(() => audio.playNote(554), 200);
+        setTimeout(() => audio.playNote(659), 400);
         state.player.location.x = map.start_position.x;
         state.player.location.y = map.start_position.y;
         state.player.location.z = map.start_position.z;
@@ -237,7 +238,7 @@ const newGame = () => {
         powerupRenderer.typeData[idx + i] = powerupTypes.none;
       }
       powerupRenderer.stale = idx;
-      playNote(659);
+      audio.playNote(659);
     }
 
     // Update orbs and emitters
@@ -274,7 +275,7 @@ const newGame = () => {
     setPowerupRenderer: (r) => {powerupRenderer = r;},
     doDamage: (dmg) => {
       state.player.health -= dmg;
-      playNote(466);
+      audio.playNote(466);
     },
   };
 };
@@ -467,7 +468,7 @@ const newBaddie = (gl, mesh) => {
   // Things that happen when the baddie dies.
   baddie.explode = (emitterSpawns) => {
     baddie.health = 0;
-    playNote(440);
+    audio.playNote(440);
     const [x, y, z] = getIntCoords(baddie.location);
     emitterSpawns.push([x, y, z, 5]);
   };

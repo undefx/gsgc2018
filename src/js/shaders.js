@@ -203,7 +203,6 @@ const shaders = {
         float s = 0.2;
         mat4 scale = mat4(s, 0, 0, 0, 0, s, 0, 0, 0, 0, s, 0, 0, 0, 0, 1);
         vec4 pos = scale * ry * rx * rz * vec4(a_vtx_pos, 1) + vec4(mdl, 0);
-        pos.x += 0.01 * u_player.x;
         vec4 tpos = u_transform * pos;
         tpos.xyz *= min(a_type, 1.0);
         vec2 tex = a_texCoord;

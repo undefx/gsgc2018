@@ -321,13 +321,14 @@ const setup = () => {
       game.state.input.pointerLocked = document.pointerLockElement === canvas;
       if (game.state.input.pointerLocked) {
         requestAnimationFrame(render);
-        playNote(440);
+        audio.playNote(440);
       }
     } else if (!isLocked) {
       game.state.input.pointerLocked = false;
-      playNote(415);
+      audio.playNote(415);
     }
   });
+  setInterval(audio.playTheme, 60000);
 
   // Build a static mesh for each block type.
   const blockProgram = newProgram(gl, 'block');
@@ -388,9 +389,9 @@ const setup = () => {
 
   const staticMeshes = {
     // Ceiling
-    1: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0, 0))),
+    1: newBlockType(uploadTexture(gl, randomTexture(16, 0.7, 0, 0))),
     // Ground
-    2: newBlockType(uploadTexture(gl, randomTexture(8, 0, 0.7, 0))),
+    2: newBlockType(uploadTexture(gl, randomTexture(16, 0, 0.7, 0))),
     // Floors
     3: newBlockType(uploadTexture(gl, randomTexture(8, 0.5, 0.5, 0.3))),
     // Walls
@@ -462,7 +463,7 @@ const setup = () => {
           if (bad.health <= 0) {
             bad.explode(game.state.emitterSpawns);
           } else {
-            playNote(392);
+            audio.playNote(392);
           }
         }
       });
@@ -623,7 +624,7 @@ const setup = () => {
       telemetry.blend('log', 0);
       if (telemetry.get('log') < 1) {
         telemetry.log();
-        telemetry.add('log', 100);
+        telemetry.add('log', 200);
       }
     }
   };
