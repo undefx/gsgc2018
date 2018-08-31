@@ -1,7 +1,6 @@
 /* jshint esversion: 6 */
 
-// Miscellaneous functions. All code here is either temporary or experimental
-// and should be moved to a better home at earliest convenience.
+// Texture helper functions.
 
 const byte = (x) => {
   return Math.floor(x * 255);
@@ -65,44 +64,4 @@ const paletteTexture = () => {
     }
   }
   return ctx.canvas;
-};
-
-const flatten = (arrays) => {
-  const result = [];
-  arrays.forEach((a) => {
-    a.forEach((b) => {
-      result.push(b);
-    });
-  });
-  return result;
-};
-
-// Tracks runtime stats for debugging.
-const newTelemetry = () => {
-  const counters = {};
-  const get = (name, default_) => {
-    if (counters.hasOwnProperty(name)) {
-      return counters[name];
-    } else {
-      return default_;
-    }
-  };
-  const add = (name, value) => {
-    counters[name] = get(name, 0) + value;
-  };
-  const blend = (name, value, weight) => {
-    weight = weight || 0.05;
-    counters[name] = (1 - weight) * get(name, value) + weight * value;
-  };
-  const log = () => {
-    Object.getOwnPropertyNames(counters).forEach((name) => {
-      console.log(name, get(name));
-    });
-  };
-  return {
-    get: get,
-    add: add,
-    blend: blend,
-    log: log,
-  };
 };

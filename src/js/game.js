@@ -90,6 +90,9 @@ const getIntCoords = (obj) => [
 // Initialize a new game.
 const newGame = () => {
   const state = {
+    renderFuncGenArgs: null,
+    renderFuncGen: null,
+    renderFunc: null,
     level: 1,
     limits: {
       health: 3,
@@ -156,6 +159,19 @@ const newGame = () => {
     state.orbs.push(orb);
   };
 
+  const goToLevel = (lvl) => {
+    state.level = lvl;
+    state.renderFunc = state.renderFuncGen(...state.renderFuncGenArgs);
+    state.player.location.x = map.start_position.x;
+    state.player.location.y = map.start_position.y;
+    state.player.location.z = map.start_position.z;
+    state.player.direction = map.start_direction;
+    state.player.altitude = 0;
+    state.player.fallSpeed = 0;
+    state.player.health = 3;
+    state.player.ammo = 15;
+  };
+
   const walkDirection = [
     [5, 4, 3],
     [6, 0, 2],
@@ -220,15 +236,11 @@ const newGame = () => {
       } else if (powerup == powerupTypes.health) {
         state.player.health = Math.min(state.player.health + 1, state.limits.health);
       } else if (powerup == powerupTypes.exit) {
-        // TODO: next level stuff...
         audio.playNote(440);
         setTimeout(() => audio.playNote(554), 200);
         setTimeout(() => audio.playNote(659), 400);
-        state.player.location.x = map.start_position.x;
-        state.player.location.y = map.start_position.y;
-        state.player.location.z = map.start_position.z;
-        state.player.direction = map.start_direction;
-        state.level++;
+        goToLevel(state.level + 1);
+        // No need to finish update.
         return;
       }
       map.blockInfo[layer][row][col].powerup = powerupTypes.none;
@@ -277,6 +289,7 @@ const newGame = () => {
       state.player.health -= dmg;
       audio.playNote(466);
     },
+    goToLevel: goToLevel,
   };
 };
 const newBaddie = (gl, mesh) => {

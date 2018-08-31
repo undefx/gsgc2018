@@ -2,217 +2,7 @@
 
 // Stuff that needs to be detangled. This file should eventually go away.
 
-// Creates a new quad interface object.
-const newQuad = (gl, palette, texture, tex_x_offset, tex_x_num) => {
-  const program = newProgram(gl, 'quad');
-
-  const c = 1;
-  // vertices
-  const positions = [
-    -c, -c, c, -c, c, c,
-    -c, -c, c, c, -c, c,
-  ];
-  const coords = [
-    0, 1, 1, 1, 1, 0,
-    0, 1, 1, 0, 0, 0,
-  ];
-  const positionBuffer = uploadBuffer(gl, positions);
-  const coordsBuffer = uploadBuffer(gl, coords);
-
-  let texTransform = identity();
-  texTransform = matmul(texTransform, translate(tex_x_offset / tex_x_num, 0, 0));
-  texTransform = matmul(texTransform, scale(1 / tex_x_num, 1, 1));
-
-  const renderer = createRenderer(gl, program);
-  renderer.data.uniform.sampler2D.image = texture;
-  renderer.data.uniform.sampler2D.palette = palette;
-  renderer.data.uniform.float.filter = 1;
-  renderer.data.uniform.mat4.texTransform = texTransform;
-  renderer.data.attribute.vec2.position = positionBuffer;
-  renderer.data.attribute.vec2.texCoord = coordsBuffer;
-  const numPoints = positions.length / 2;
-
-  return (gl, transform) => {
-    renderer.data.uniform.mat4.transform = transform;
-    renderer.render(numPoints);
-  };
-};
-
-// Adds a new block (cube) to a static mesh.
-const addBlockToMesh = (mesh, dx, dy, dz, size) => {
-  // vertices
-  var s = size || 1;
-  const vRUF = [dx + s, dy + s, dz];
-  const vRUB = [dx + s, dy + s, dz + s];
-  const vRDF = [dx + s, dy, dz];
-  const vRDB = [dx + s, dy, dz + s];
-  const vLUF = [dx, dy + s, dz];
-  const vLUB = [dx, dy + s, dz + s];
-  const vLDF = [dx, dy, dz];
-  const vLDB = [dx, dy, dz + s];
-  flatten([
-    // front
-    vLDF, vRUF, vLUF,
-    vLDF, vRDF, vRUF,
-    // right
-    vRDF, vRUB, vRUF,
-    vRDF, vRDB, vRUB,
-    // back
-    vRDB, vLUB, vRUB,
-    vRDB, vLDB, vLUB,
-    // left
-    vLDB, vLUF, vLUB,
-    vLDB, vLDF, vLUF,
-    // top
-    vLUF, vRUB, vLUB,
-    vLUF, vRUF, vRUB,
-    // bottom
-    vLDB, vRDF, vLDF,
-    vLDB, vRDB, vRDF,
-  ]).forEach(e => mesh.vertices.push(e));
-
-  // Texture coordinates for a single face. All faces are identical.
-  const faceCoords = [
-    0, 1, 1, 0, 0, 0,
-    0, 1, 1, 1, 1, 0,
-  ];
-  flatten([
-    faceCoords, faceCoords, faceCoords, faceCoords, faceCoords, faceCoords
-  ]).forEach(e => mesh.texCoords.push(e));
-};
-
-// Adds a new ramp to a static mesh.
-const addRampToMesh = (mesh, direction, dx, dy, dz) => {
-  // vertices
-  const c = 0.5;
-  const trans = translate(c + dx, c + dy, c + dz);
-  const rot = rotate.y(-Math.PI / 2 * direction);
-  const shift = matmul(trans, rot);
-  const applyShift = (x, y, z) => matmul(shift, [x, y, z, 1]).splice(0, 3);
-  const vRUB = applyShift(+c, +c, +c);
-  const vRDF = applyShift(+c, -c, -c);
-  const vRDB = applyShift(+c, -c, +c);
-  const vLUB = applyShift(-c, +c, +c);
-  const vLDF = applyShift(-c, -c, -c);
-  const vLDB = applyShift(-c, -c, +c);
-  flatten([
-    // ramp
-    vLDF, vRUB, vLUB,
-    vLDF, vRDF, vRUB,
-    // right
-    vRDF, vRDB, vRUB,
-    // back
-    vRDB, vLUB, vRUB,
-    vRDB, vLDB, vLUB,
-    // left
-    vLDB, vLDF, vLUB,
-    // bottom
-    vLDF, vRDB, vRDF,
-    vLDF, vLDB, vRDB,
-  ]).forEach(e => mesh.vertices.push(e));
-
-  // Texture coordinates for square faces.
-  const squareCoords = [
-    0, 1, 1, 0, 0, 0,
-    0, 1, 1, 1, 1, 0,
-  ];
-  flatten([
-    // ramp
-    squareCoords,
-    // right
-    [0, 1, 1, 1, 1, 0,],
-    // back
-    squareCoords,
-    // left
-    [0, 1, 1, 1, 0, 0],
-    // bottom
-    squareCoords,
-  ]).forEach(e => mesh.texCoords.push(e));
-};
-
-// Adds a new powerup to a static mesh.
-const addPowerupToMesh = (mesh, dx, dy, dz, type) => {
-  // Vertices
-  const c = 0.5;
-  const vRUF = [+c, +c, 0];
-  const vRDF = [+c, -c, 0];
-  const vLUF = [-c, +c, 0];
-  const vLDF = [-c, -c, 0];
-  flatten([
-    vLDF, vRUF, vLUF,
-    vLDF, vRDF, vRUF,
-  ]).forEach(e => mesh.vertices.push(e));
-
-  // Texture coordinates
-  [
-    0, 1, 1, 0, 0, 0,
-    0, 1, 1, 1, 1, 0,
-  ].forEach(e => mesh.texCoords.push(e));
-
-  // Offsets
-  const position = [dx, dy, dz];
-  flatten([
-    position, position, position,
-    position, position, position,
-  ]).forEach(e => mesh.positions.push(e));
-
-  // Types
-  [type, type, type, type, type, type].forEach(e => mesh.types.push(e));
-};
-
-// Creates a new static mesh renderer.
-const newMeshRenderer = (gl, mesh) => {
-  const program = mesh.program;
-  const vertexBuffer = uploadBuffer(gl, mesh.vertices);
-  const texCoordBuffer = uploadBuffer(gl, mesh.texCoords);
-
-  const renderer = createRenderer(gl, program);
-  renderer.data.uniform.sampler2D.image = mesh.texture;
-  renderer.data.uniform.sampler2D.palette = mesh.palette;
-  renderer.data.uniform.float.filter = 1;
-  renderer.data.attribute.vec3.position = vertexBuffer;
-  renderer.data.attribute.vec2.texCoord = texCoordBuffer;
-  const numPoints = mesh.vertices.length / 3;
-
-  return (transform) => {
-    renderer.data.uniform.mat4.transform = transform;
-    renderer.render(numPoints);
-  };
-};
-
-// Creates a new powerup mesh renderer.
-const newPowerupRenderer = (gl, mesh) => {
-  const program = mesh.program;
-  const vertexBuffer = uploadBuffer(gl, mesh.vertices);
-  const positionBuffer = uploadBuffer(gl, mesh.positions);
-  const texCoordBuffer = uploadBuffer(gl, mesh.texCoords);
-  const typeBuffer = uploadBuffer(gl, mesh.types);
-
-  const renderer = createRenderer(gl, program);
-  renderer.data.uniform.sampler2D.image = mesh.texture;
-  renderer.data.uniform.sampler2D.palette = mesh.palette;
-  renderer.data.uniform.float.filter = 1;
-  renderer.data.attribute.vec3.vtx_pos = vertexBuffer;
-  renderer.data.attribute.vec3.mdl_pos = positionBuffer;
-  renderer.data.attribute.vec2.texCoord = texCoordBuffer;
-  renderer.data.attribute.float.type = typeBuffer;
-  const numPoints = mesh.vertices.length / 3;
-
-  const render = (transform, timestamp, x, y, z) => {
-    renderer.data.uniform.mat4.transform = transform;
-    renderer.data.uniform.vec3.player = [x, y, z];
-    renderer.data.uniform.float.time = timestamp;
-    renderer.render(numPoints);
-  };
-
-  return {
-    render: render,
-    typeBufferId: typeBuffer,
-    typeData: mesh.types,
-    stale: false,
-  };
-};
-
+// Player input constants.
 const mouseSensitivity = 0.0015;
 const keyMap = {
   'w': 'forward',
@@ -222,16 +12,49 @@ const keyMap = {
   ' ': 'jumping',
 };
 
-const telemetry = newTelemetry();
+// Tracks runtime stats for debugging.
+const telemetry = (() => {
+  const counters = {};
+  const get = (name, default_) => {
+    if (counters.hasOwnProperty(name)) {
+      return counters[name];
+    } else {
+      return default_;
+    }
+  };
+  const add = (name, value) => {
+    counters[name] = get(name, 0) + value;
+  };
+  const blend = (name, value, weight) => {
+    weight = weight || 0.05;
+    counters[name] = (1 - weight) * get(name, value) + weight * value;
+  };
+  const log = () => {
+    Object.getOwnPropertyNames(counters).forEach((name) => {
+      console.log(name, get(name));
+    });
+  };
+  return {
+    get: get,
+    add: add,
+    blend: blend,
+    log: log,
+  };
+})();
 
-
-const setup = () => {
-  const canvas = document.getElementsByTagName('canvas')[0];
+// Get and initialize GL context.
+const initGL = (canvas) => {
   const options = {alpha: false, antialias : false};
   const gl = canvas.getContext('webgl', options);
   gl.enable(gl.CULL_FACE);
   gl.frontFace(gl.CCW);
   gl.cullFace(gl.BACK);
+  return gl;
+};
+
+const setup = () => {
+  const canvas = document.getElementsByTagName('canvas')[0];
+  const gl = initGL(canvas);
 
   const paletteTexId = uploadTexture(gl, paletteTexture());
 
@@ -266,27 +89,11 @@ const setup = () => {
   };
 
   const game = newGame();
+  game.state.renderFuncGenArgs = [canvas, gl, game, paletteTexId, renderString, renderTextGrid];
+  game.state.renderFuncGen = getGameRenderer;
+  game.goToLevel(1);
 
-  const levelString = '' + game.state.level;
-  const enterBlockTextureId = renderTextGrid(gl, [
-    '+              +','',
-    'level:          '.slice(0, 16 - levelString.length) + levelString,'',
-    'move:    w/a/s/d','',
-    'jump:      space','',
-    'shoot:     click','','',
-    '   objective:',
-    ' get out alive','',
-    '   good luck!',
-    '+              +',
-  ]);
-  const exitBlockTextureId = renderTextGrid(gl, [
-    '+   +',
-    ' got ',
-    ' out ',
-    'alive',
-    '+   +',
-  ]);
-
+  // Wire up user input.
   canvas.addEventListener('keydown', (e) => {
     if (keyMap.hasOwnProperty(e.key)) {
       game.state.input[keyMap[e.key]] = true;
@@ -320,7 +127,7 @@ const setup = () => {
     if (!game.state.input.pointerLocked && isLocked) {
       game.state.input.pointerLocked = document.pointerLockElement === canvas;
       if (game.state.input.pointerLocked) {
-        requestAnimationFrame(render);
+        requestAnimationFrame(game.state.renderFunc);
         audio.playNote(440);
       }
     } else if (!isLocked) {
@@ -329,6 +136,30 @@ const setup = () => {
     }
   });
   setInterval(audio.playTheme, 60000);
+
+  requestAnimationFrame(game.state.renderFunc);
+};
+
+const getGameRenderer = (canvas, gl, game, paletteTexId, renderString, renderTextGrid) => {
+  const levelString = '' + game.state.level;
+  const enterBlockTextureId = renderTextGrid(gl, [
+    '+              +','',
+    'level:          '.slice(0, 16 - levelString.length) + levelString,'',
+    'move:    w/a/s/d','',
+    'jump:      space','',
+    'shoot:     click','','',
+    '   objective:',
+    ' get out alive','',
+    '   good luck!',
+    '+              +',
+  ]);
+  const exitBlockTextureId = renderTextGrid(gl, [
+    '+   +',
+    ' got ',
+    ' out ',
+    'alive',
+    '+   +',
+  ]);
 
   // Build a static mesh for each block type.
   const blockProgram = newProgram(gl, 'block');
@@ -434,7 +265,7 @@ const setup = () => {
   let lastTimestamp = 0;
   const render = (timestamp) => {
     if (game.state.input.pointerLocked) {
-      requestAnimationFrame(render);
+      requestAnimationFrame(game.state.renderFunc);
     }
     telemetry.blend('frame_lag', timestamp - lastTimestamp);
     lastTimestamp = timestamp;
@@ -629,5 +460,5 @@ const setup = () => {
     }
   };
 
-  requestAnimationFrame(render);
+  return render;
 };
