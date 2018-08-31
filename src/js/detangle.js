@@ -391,7 +391,9 @@ const setup = () => {
     // Ramps (N, E, S, W)
     'ramps': rampBlockType,
   };
-  const powerupMesh = newPowerupType(orbTexture);
+  const powerupColors = solidTextureStack([0.8, 0.4, 0.1], [0.5, 0.5, 0.7]);
+  const powerupTextureId = uploadTexture(gl, powerupColors);
+  const powerupMesh = newPowerupType(powerupTextureId);
   for (let layer = 0; layer < map.blocks.length; layer++) {
     for (let row = 0; row < map.blocks[0].length; row++) {
       for (let col = 0; col < map.blocks[0][0].length; col++) {

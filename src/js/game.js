@@ -213,16 +213,17 @@ const newGame = () => {
     // Collect powerups
     const [col, layer, row] = getIntCoords(state.player.location);
     const powerup = map.blockInfo[layer][row][col].powerup;
-    if (powerup != 0) {
-      if (powerup == 1) {
-        // Ammo
-        state.player.ammo += 5;
+    if (powerup != powerupTypes.none) {
+      if (powerup == powerupTypes.ammo) {
+        state.player.ammo = Math.min(state.player.ammo + 5, state.limits.ammo);
+      } else if (powerup == powerupTypes.health) {
+        state.player.health = Math.min(state.player.health + 1, state.limits.health);
       }
-      map.blockInfo[layer][row][col].powerup = 0;
+      map.blockInfo[layer][row][col].powerup = powerupTypes.none;
       let idx = map.blockInfo[layer][row][col].attributeBufferIndex;
       idx *= 6;
       for (let i = 0; i < 6; i++) {
-        powerupRenderer.typeData[idx + i] = 0;
+        powerupRenderer.typeData[idx + i] = powerupTypes.none;
       }
       powerupRenderer.stale = idx;
       playNote(659);

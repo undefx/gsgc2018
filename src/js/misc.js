@@ -36,6 +36,18 @@ const solidTexture = (red, green, blue) => {
   return ctx.canvas;
 };
 
+const solidTextureStack = (...colors) => {
+  const ctx = document.createElement("canvas").getContext("2d");
+  ctx.canvas.width = colors.length;
+  ctx.canvas.height = 1;
+  for (let i = 0; i < colors.length; i++) {
+    const rgb = getRgb2(...colors[i]);
+    ctx.fillStyle = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    ctx.fillRect(i, 0, 1, 1);
+  }
+  return ctx.canvas;
+};
+
 const paletteTexture = () => {
   const ctx = document.createElement("canvas").getContext("2d");
   const n = 3;

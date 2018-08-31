@@ -193,8 +193,10 @@ const shaders = {
         pos.x += 0.01 * u_player.x;
         vec4 tpos = u_transform * pos;
         tpos.xyz *= min(a_type, 1.0);
+        vec2 tex = a_texCoord;
+        tex.x = (tex.x + a_type - 1.0) / 2.0;
         v_position = tpos.xyz;
-        v_texCoord = a_texCoord;
+        v_texCoord = tex;
         gl_Position = tpos;
       }
     `,

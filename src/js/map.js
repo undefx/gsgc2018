@@ -131,6 +131,13 @@ for(var k = 1; k < layers*2+1; k+=2){
 // Level indicator block.
 map.blocks[1][0][1] = 5;
 
+// Powerup definitions.
+const powerupTypes = {
+  none: 0,
+  ammo: 1,
+  health: 2,
+};
+
 // Initialze block info.
 let i = 0;
 for (let l = 0; l < map.blocks.length; l++) {
@@ -141,7 +148,7 @@ for (let l = 0; l < map.blocks.length; l++) {
       // Things that can potentially occupy this block.
       row.push({
         attributeBufferIndex: i++,
-        powerup: 0,
+        powerup: powerupTypes.none,
       });
     }
     layer.push(row);
@@ -149,7 +156,10 @@ for (let l = 0; l < map.blocks.length; l++) {
   map.blockInfo.push(layer);
 }
 
-// TODO: Add powerups; these are just samples (ammo=1)
-map.blockInfo[1][2][2].powerup = 1;
-map.blockInfo[1][4][3].powerup = 1;
-map.blockInfo[1][3][4].powerup = 1;
+// TODO: Add powerups; these are just samples.
+map.blockInfo[1][2][2].powerup = powerupTypes.ammo;
+map.blockInfo[1][4][3].powerup = powerupTypes.ammo;
+map.blockInfo[1][3][4].powerup = powerupTypes.ammo;
+map.blockInfo[1][6][6].powerup = powerupTypes.health;
+map.blockInfo[1][7][6].powerup = powerupTypes.health;
+map.blockInfo[1][6][7].powerup = powerupTypes.health;
