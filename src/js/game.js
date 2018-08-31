@@ -161,7 +161,6 @@ const newGame = () => {
   };
 
   const goToLevel = (lvl, delay, status) => {
-    state.renderFunc = () => {};
     state.levelStatus = status;
     const changeLevel = () => {
       state.levelStatus = null;
@@ -175,10 +174,10 @@ const newGame = () => {
       state.player.health = 3;
       state.player.ammo = 15;
       state.renderFunc = state.renderFuncGen(...state.renderFuncGenArgs);
-      requestAnimationFrame(state.renderFunc);
+      //requestAnimationFrame(state.renderFunc);
     };
     if (delay) {
-      setTimeout(changeLevel, 1000);
+      setTimeout(changeLevel, 2000);
     } else {
       changeLevel();
     }
@@ -196,7 +195,7 @@ const newGame = () => {
 
   let lastUpdate = 0;
   const update = (timestamp) => {
-    const dt = Math.min(timestamp - lastUpdate, 1000) / 1000;
+    const dt = Math.min(timestamp - lastUpdate, 160) / 1000;
     lastUpdate = timestamp;
 
     let dx = 0, dz = 0;
@@ -444,7 +443,7 @@ const newBaddie = (gl, mesh) => {
 	baddie.shortGoal = [null, null, null, null, null, null];
 	let lastUpdate = 0;
 	baddie.update = (timestamp, playerLocation) => {
-		const dt = Math.min(timestamp - lastUpdate, 1000) / 1000;
+		const dt = Math.min(timestamp - lastUpdate, 160) / 1000;
 		lastUpdate = timestamp;
 		if(baddie.hitTime == 0) baddie.hitTime = timestamp;
 		const layer = Math.floor(baddie.location.y);

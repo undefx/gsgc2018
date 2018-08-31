@@ -128,7 +128,7 @@ const setup = () => {
     if (!game.state.input.pointerLocked && isLocked) {
       game.state.input.pointerLocked = document.pointerLockElement === canvas;
       if (game.state.input.pointerLocked) {
-        requestAnimationFrame(game.state.renderFunc);
+        //requestAnimationFrame(game.state.renderFunc);
         audio.playNote(440);
       }
     } else if (!isLocked) {
@@ -138,6 +138,7 @@ const setup = () => {
   });
   setInterval(audio.playTheme, 60000);
   game.state.levelStatus = 'click to play';
+  requestAnimationFrame(game.state.renderFunc);
 };
 
 const getGameRenderer = (canvas, gl, game, paletteTexId, renderString, renderTextGrid) => {
@@ -264,20 +265,24 @@ const getGameRenderer = (canvas, gl, game, paletteTexId, renderString, renderTex
 
   let lastTimestamp = 0;
   const render = (timestamp) => {
-    if (game.state.input.pointerLocked) {
-      requestAnimationFrame(game.state.renderFunc);
-    }
+    //if (game.state.input.pointerLocked) {
+    requestAnimationFrame(game.state.renderFunc);
+    //}
     telemetry.blend('frame_lag', timestamp - lastTimestamp);
     lastTimestamp = timestamp;
 
     let time0 = performance.now();
-    game.update(timestamp);
+    if (game.state.levelStatus == null) {
+      game.update(timestamp);
+    }
     telemetry.blend('update_game', performance.now() - time0);
 
     time0 = performance.now();
-  	baddies.forEach((b)=>{
-  		b.update(timestamp, game.state.player.location);
-  	});
+    if (game.state.levelStatus == null) {
+    	baddies.forEach((b)=>{
+    		b.update(timestamp, game.state.player.location);
+    	});
+    }
     telemetry.blend('update_baddies', performance.now() - time0);
 
     time0 = performance.now();
@@ -440,7 +445,7 @@ const getGameRenderer = (canvas, gl, game, paletteTexId, renderString, renderTex
 
     // Crosshairs
     time0 = performance.now();
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       transform = identity();
       transform = matmul(transform, translate(-1 / 360, 0, 0));
       transform = matmul(transform, rotate.z(i * Math.PI * 2 / 3));
