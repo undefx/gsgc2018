@@ -91,7 +91,7 @@ const setup = () => {
   const game = newGame();
   game.state.renderFuncGenArgs = [canvas, gl, game, paletteTexId, renderString, renderTextGrid];
   game.state.renderFuncGen = getGameRenderer;
-  game.goToLevel(1);
+  game.goToLevel(1, false, null);
 
   // Wire up user input.
   canvas.addEventListener('keydown', (e) => {
@@ -124,6 +124,7 @@ const setup = () => {
   });
   document.addEventListener('pointerlockchange', (e) => {
     const isLocked = document.pointerLockElement === canvas;
+    game.state.levelStatus = isLocked ? null : 'click to play';
     if (!game.state.input.pointerLocked && isLocked) {
       game.state.input.pointerLocked = document.pointerLockElement === canvas;
       if (game.state.input.pointerLocked) {
@@ -136,8 +137,7 @@ const setup = () => {
     }
   });
   setInterval(audio.playTheme, 60000);
-
-  requestAnimationFrame(game.state.renderFunc);
+  game.state.levelStatus = 'click to play';
 };
 
 const getGameRenderer = (canvas, gl, game, paletteTexId, renderString, renderTextGrid) => {
@@ -198,7 +198,7 @@ const getGameRenderer = (canvas, gl, game, paletteTexId, renderString, renderTex
   const baddieTexture = uploadTexture(gl, solidTexture(0.9, 0.2, 0.2));//lance
   var baddieMesh = newBlockType(baddieTexture);
   var baddies = [];
-  for(var b = 0; b < 10; b++) {
+  for(var b = 0; b < 3; b++) {
 	  baddies.push(newBaddie(gl, baddieMesh));
   }
 
@@ -449,6 +449,18 @@ const getGameRenderer = (canvas, gl, game, paletteTexId, renderString, renderTex
       crosshairQuad(gl, transform);
     }
     telemetry.blend('render_cross', performance.now() - time0);
+
+    // Level status
+    time0 = performance.now();
+    if (game.state.levelStatus != null) {
+      const n = game.state.levelStatus.length;
+      transform = identity();
+      transform = matmul(transform, translate(-n / 30, 0, 0));
+      transform = matmul(transform, scale(12 / 360, 48 / 400, 1));
+      transform = matmul(transform, translate(1, 0, 0));
+      renderString(gl, game.state.levelStatus, transform);
+    }
+    telemetry.blend('render_ls', performance.now() - time0);
 
     // Telemetry debugging
     if (DEBUG) {

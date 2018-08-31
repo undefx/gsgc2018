@@ -90,6 +90,7 @@ const getIntCoords = (obj) => [
 // Initialize a new game.
 const newGame = () => {
   const state = {
+    levelStatus: null,
     renderFuncGenArgs: null,
     renderFuncGen: null,
     renderFunc: null,
@@ -159,17 +160,28 @@ const newGame = () => {
     state.orbs.push(orb);
   };
 
-  const goToLevel = (lvl) => {
-    state.level = lvl;
-    state.renderFunc = state.renderFuncGen(...state.renderFuncGenArgs);
-    state.player.location.x = map.start_position.x;
-    state.player.location.y = map.start_position.y;
-    state.player.location.z = map.start_position.z;
-    state.player.direction = map.start_direction;
-    state.player.altitude = 0;
-    state.player.fallSpeed = 0;
-    state.player.health = 3;
-    state.player.ammo = 15;
+  const goToLevel = (lvl, delay, status) => {
+    state.renderFunc = () => {};
+    state.levelStatus = status;
+    const changeLevel = () => {
+      state.levelStatus = null;
+      state.level = lvl;
+      state.player.location.x = map.start_position.x;
+      state.player.location.y = map.start_position.y;
+      state.player.location.z = map.start_position.z;
+      state.player.direction = map.start_direction;
+      state.player.altitude = 0;
+      state.player.fallSpeed = 0;
+      state.player.health = 3;
+      state.player.ammo = 15;
+      state.renderFunc = state.renderFuncGen(...state.renderFuncGenArgs);
+      requestAnimationFrame(state.renderFunc);
+    };
+    if (delay) {
+      setTimeout(changeLevel, 1000);
+    } else {
+      changeLevel();
+    }
   };
 
   const walkDirection = [
@@ -239,7 +251,7 @@ const newGame = () => {
         audio.playNote(440);
         setTimeout(() => audio.playNote(554), 200);
         setTimeout(() => audio.playNote(659), 400);
-        goToLevel(state.level + 1);
+        goToLevel(state.level + 1, true, 'next level');
         // No need to finish update.
         return;
       }
@@ -287,7 +299,14 @@ const newGame = () => {
     setPowerupRenderer: (r) => {powerupRenderer = r;},
     doDamage: (dmg) => {
       state.player.health -= dmg;
-      audio.playNote(466);
+      if (state.player.health <= 0) {
+        audio.playNote(440);
+        setTimeout(() => audio.playNote(370), 200);
+        setTimeout(() => audio.playNote(349), 400);
+        goToLevel(1, true, 'game over');
+      } else {
+        audio.playNote(466);
+      }
     },
     goToLevel: goToLevel,
   };

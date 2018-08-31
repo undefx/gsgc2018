@@ -53,15 +53,15 @@ const audio = (() => {
       let o = 0;
       for (let j = 0; j < 4; j++) {
         for (let i = 0; i < 3; i++) {
-          setTimeout(() => audio.playDrum(150), o + i * 1200 / 3);
+          setTimeout(() => audio.playDrum(220), o + i * 1200 / 3);
         }
         o += 1200;
         for (let i = 0.25; i < 2.25; i++) {
-          setTimeout(() => audio.playDrum(150), o + i * 800 / 3);
+          setTimeout(() => audio.playDrum(220), o + i * 800 / 3);
         }
         o += 800;
         for (let i = 0; i < 16; i++) {
-          setTimeout(() => audio.playDrum(150), o + i * 2000 / 16);
+          setTimeout(() => audio.playDrum(220), o + i * 2000 / 16);
         }
         o += 2000;
       }
