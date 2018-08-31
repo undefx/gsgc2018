@@ -251,10 +251,12 @@ const setup = () => {
   };
 
   const renderTextGrid = (gl, lines) => {
+    const size = lines.length;
     return renderToTexture(gl, 192, 256, () => {
       let transform = identity();
       transform = matmul(transform, translate(-0.5, -0.5, 0));
-      transform = matmul(transform, scale(1 / 32, -1 / 32, 1));
+      transform = matmul(transform, scale(1 / 2, 1 / 2, 1));
+      transform = matmul(transform, scale(1 / size, -1 / size, 1));
       transform = matmul(transform, translate(1, -1, 0));
       for (let i = 0; i < lines.length; i++) {
         renderString(gl, lines[i], transform);
@@ -266,7 +268,7 @@ const setup = () => {
   const game = newGame();
 
   const levelString = '' + game.state.level;
-  const renderedTextureId = renderTextGrid(gl, [
+  const enterBlockTextureId = renderTextGrid(gl, [
     '+              +','',
     'level:          '.slice(0, 16 - levelString.length) + levelString,'',
     'move:    w/a/s/d','',
@@ -274,8 +276,15 @@ const setup = () => {
     'shoot:     click','','',
     '   objective:',
     ' get out alive','',
-    '   good luck!','',
+    '   good luck!',
     '+              +',
+  ]);
+  const exitBlockTextureId = renderTextGrid(gl, [
+    '+   +',
+    ' got ',
+    ' out ',
+    'alive',
+    '+   +',
   ]);
 
   canvas.addEventListener('keydown', (e) => {
@@ -387,11 +396,14 @@ const setup = () => {
     // Walls
     4: newBlockType(uploadTexture(gl, randomTexture(8, 0.7, 0.7, 0.7))),
     // Level indicator block
-    5: newBlockType(renderedTextureId),
+    5: newBlockType(enterBlockTextureId),
+    // 6, 7, 8, 9 are reserved
+    // Exit block
+    10: newBlockType(exitBlockTextureId),
     // Ramps (N, E, S, W)
     'ramps': rampBlockType,
   };
-  const powerupColors = solidTextureStack([0.8, 0.4, 0.1], [0.5, 0.5, 0.7]);
+  const powerupColors = solidTextureStack([0.8, 0.4, 0.1], [0.5, 0.5, 0.7], [1, 1, 1]);
   const powerupTextureId = uploadTexture(gl, powerupColors);
   const powerupMesh = newPowerupType(powerupTextureId);
   for (let layer = 0; layer < map.blocks.length; layer++) {

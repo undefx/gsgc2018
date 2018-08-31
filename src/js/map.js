@@ -130,12 +130,15 @@ for(var k = 1; k < layers*2+1; k+=2){
 
 // Level indicator block.
 map.blocks[1][0][1] = 5;
+map.blocks[map.blocks.length - 2][height - 2][width - 2] = 0;
+map.blocks[map.blocks.length - 2][height - 1][width - 2] = 10;
 
 // Powerup definitions.
 const powerupTypes = {
   none: 0,
   ammo: 1,
   health: 2,
+  exit: 3,
 };
 
 // Initialze block info.
@@ -155,6 +158,9 @@ for (let l = 0; l < map.blocks.length; l++) {
   }
   map.blockInfo.push(layer);
 }
+
+// Exit indicator
+map.blockInfo[map.blocks.length - 2][height - 2][width - 2].powerup = powerupTypes.exit;
 
 // TODO: Add powerups; these are just samples.
 map.blockInfo[1][2][2].powerup = powerupTypes.ammo;

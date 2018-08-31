@@ -218,6 +218,17 @@ const newGame = () => {
         state.player.ammo = Math.min(state.player.ammo + 5, state.limits.ammo);
       } else if (powerup == powerupTypes.health) {
         state.player.health = Math.min(state.player.health + 1, state.limits.health);
+      } else if (powerup == powerupTypes.exit) {
+        // TODO: next level stuff...
+        playNote(440);
+        setTimeout(() => playNote(554), 200);
+        setTimeout(() => playNote(659), 400);
+        state.player.location.x = map.start_position.x;
+        state.player.location.y = map.start_position.y;
+        state.player.location.z = map.start_position.z;
+        state.player.direction = map.start_direction;
+        state.level++;
+        return;
       }
       map.blockInfo[layer][row][col].powerup = powerupTypes.none;
       let idx = map.blockInfo[layer][row][col].attributeBufferIndex;
@@ -340,7 +351,7 @@ const newBaddie = (gl, mesh) => {
 		}
 		return [0,0];
 	};
-	
+
 	baddie.findRamp = (layer, row, col, dl) => {
 		//Find ramp location
 		var lrc = baddie.bfs(layer+dl, row, col, null, null, [6,7,8,9], dl<0);
@@ -428,10 +439,10 @@ const newBaddie = (gl, mesh) => {
 			var xratio = (3-Math.abs(baddie.shortGoal[3] - baddie.location.x))/2.9;
 			var up = baddie.shortGoal[5] > baddie.shortGoal[4];
 			//reached vertical goal
-			if((up && baddie.location.y >= baddie.shortGoal[5]) || 
-					(!up && baddie.location.y <= baddie.shortGoal[5]) || 
+			if((up && baddie.location.y >= baddie.shortGoal[5]) ||
+					(!up && baddie.location.y <= baddie.shortGoal[5]) ||
 					zratio < 0 || xratio < 0){
-				baddie.shortGoal[4] = baddie.shortGoal[5] = null;//baddie.shortGoal[1] = baddie.shortGoal[2] = 
+				baddie.shortGoal[4] = baddie.shortGoal[5] = null;//baddie.shortGoal[1] = baddie.shortGoal[2] =
 				baddie.location.y = Math.floor(baddie.location.y) + .5;
 			}
 			else if(up)

@@ -164,6 +164,8 @@ const shaders = {
       attribute float a_type;
       varying vec3 v_position;
       varying vec2 v_texCoord;
+      varying float v_time;
+      varying float v_type;
 
       void main() {
         vec3 mdl = a_mdl_pos;
@@ -173,8 +175,13 @@ const shaders = {
         vec3 delta = u_player - mdl;
         float a1 = -atan(delta.z, delta.x);
         float a2 = -atan(-length(delta.xz), delta.y);
+        float a3 = 0.0;
+        if (a_type == 3.0) {
+          a3 = u_time * 10.0;
+        }
         vec2 ab = vec2(sin(a1), cos(a1));
         vec2 fg = vec2(sin(a2), cos(a2));
+        vec2 sc = vec2(sin(a3), cos(a3));
         mat4 rx = mat4(
           1, 0, 0, 0,
           0, fg.x, fg.y, 0,
@@ -187,16 +194,24 @@ const shaders = {
           -ab.y, 0, ab.x, 0,
           0, 0, 0, 1
         );
+        mat4 rz = mat4(
+          sc.x, sc.y, 0, 0,
+          -sc.y, sc.x, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 0, 1
+        );
         float s = 0.2;
         mat4 scale = mat4(s, 0, 0, 0, 0, s, 0, 0, 0, 0, s, 0, 0, 0, 0, 1);
-        vec4 pos = scale * ry * rx * vec4(a_vtx_pos, 1) + vec4(mdl, 0);
+        vec4 pos = scale * ry * rx * rz * vec4(a_vtx_pos, 1) + vec4(mdl, 0);
         pos.x += 0.01 * u_player.x;
         vec4 tpos = u_transform * pos;
         tpos.xyz *= min(a_type, 1.0);
         vec2 tex = a_texCoord;
-        tex.x = (tex.x + a_type - 1.0) / 2.0;
+        tex.x = (tex.x + a_type - 1.0) / 3.0;
         v_position = tpos.xyz;
         v_texCoord = tex;
+        v_time = u_time;
+        v_type = a_type;
         gl_Position = tpos;
       }
     `,
@@ -208,10 +223,17 @@ const shaders = {
       uniform float u_filter;
       varying vec3 v_position;
       varying vec2 v_texCoord;
+      varying float v_time;
+      varying float v_type;
 
       void main() {
         float n = 3.0;
         vec3 rgb = texture2D(u_image, v_texCoord).rgb;
+        if (v_type == 3.0) {
+          rgb.r = 0.75 + 0.25 * sin(v_time * 5.0);
+          rgb.g = 0.75 + 0.25 * sin(v_time * 7.0);
+          rgb.b = 0.75 + 0.25 * sin(v_time * 11.0);
+        }
         rgb *= 1.0 - 0.75 * min(max(0.0, v_position.z), 1.0);
         vec3 xyz = floor(rgb * (n - 0.001));
         float idx = (xyz.x * n * n + xyz.y * n + xyz.z + 0.5) / (n * n * n);
