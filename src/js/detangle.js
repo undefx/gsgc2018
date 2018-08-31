@@ -453,12 +453,26 @@ const setup = () => {
         }
       });
   	});
+    baddies.forEach((bad) => {
+      if (bad.health <= 0) {
+        return;
+      }
+      const size = bad.hitBox + game.state.player.hitBox;
+      const dx = bad.location.x - game.state.player.location.x;
+      const dy = bad.location.y - game.state.player.location.y;
+      const dz = bad.location.z - game.state.player.location.z;
+      if (Math.abs(dx) < size && Math.abs(dy) < size && Math.abs(dz) < size) {
+        // Ouch.
+        game.doDamage(1);
+        bad.explode(game.state.emitterSpawns);
+      }
+  	});
     for (let i = 0; i < baddies.length; i++) {
       if (baddies[i].health <= 0) {
         baddies.splice(i--, 1);
       }
     }
-    telemetry.blend('update_attack', performance.now() - time0);
+    telemetry.blend('update_attacks', performance.now() - time0);
 
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clearColor(1, 1, 1, 1);

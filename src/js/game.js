@@ -92,7 +92,7 @@ const newGame = () => {
   const state = {
     level: 1,
     limits: {
-      health: 10,
+      health: 3,
       ammo: 25,
     },
     player: {
@@ -104,8 +104,9 @@ const newGame = () => {
       direction: map.start_direction,
       altitude: 0,
       fallSpeed: 0,
-      health: 10,
+      health: 3,
       ammo: 15,
+      hitBox: 0.5,
     },
     input: {
       forward: false,
@@ -253,15 +254,16 @@ const newGame = () => {
         state.emitters.splice(i--, 1);
       }
     }
-
-    // TODO: this is just a demo
-    state.player.health = (Math.sin(timestamp * 0.0005 * 6.28) + 1.0) / 2.0 * state.limits.health;
   };
 
   return {
     state: state,
     update: update,
     setPowerupRenderer: (r) => {powerupRenderer = r;},
+    doDamage: (dmg) => {
+      state.player.health -= dmg;
+      playNote(466);
+    },
   };
 };
 const newBaddie = (gl, mesh) => {
@@ -417,7 +419,8 @@ const newBaddie = (gl, mesh) => {
 
   // Things that happen when the baddie dies.
   baddie.explode = (emitterSpawns) => {
-    playNote(370);
+    baddie.health = 0;
+    playNote(440);
     const [x, y, z] = getIntCoords(baddie.location);
     emitterSpawns.push([x, y, z, 5]);
   };
