@@ -79,10 +79,22 @@ const getPositionY = (x, z, y, type) => {
   return [Math.max(y, height), isFalling];
 };
 
+const getCoords = (obj) => [
+  obj.x, obj.y, obj.z
+];
+
+const getIntCoords = (obj) => [
+  Math.floor(obj.x), Math.floor(obj.y), Math.floor(obj.z)
+];
+
 // Initialize a new game.
 const newGame = () => {
   const state = {
     level: 1,
+    limits: {
+      health: 10,
+      ammo: 25,
+    },
     player: {
       location: {
         x: map.start_position.x,
@@ -92,7 +104,8 @@ const newGame = () => {
       direction: map.start_direction,
       altitude: 0,
       fallSpeed: 0,
-      health: 4,
+      health: 10,
+      ammo: 15,
     },
     input: {
       forward: false,
@@ -107,7 +120,13 @@ const newGame = () => {
     emitters: [],
   };
 
+  let powerupRenderer = null;
+
   state.sendOrb = () => {
+    if (state.player.ammo == 0) {
+      return;
+    }
+    state.player.ammo--;
     const orbSpeed = 0.25;
     const sd = Math.sin(state.player.direction);
     const cd = Math.cos(state.player.direction);
@@ -129,7 +148,8 @@ const newGame = () => {
     orb.explode = (emitterSpawns) => {
       playNote(220);
       orb.active = false;
-      emitterSpawns.push([orb.position.x, orb.position.y, orb.position.z, 1]);
+      const [x, y, z] = getCoords(orb.position);
+      emitterSpawns.push([x, y, z, 1]);
     };
     state.orbs.push(orb);
   };
@@ -151,6 +171,8 @@ const newGame = () => {
 
     let dx = 0, dz = 0;
     const walkSpeed = dt * walkRate;
+
+    // Read player inputs
     const walkIdx = [
       1 + state.input.forward - state.input.backward,
       1 + state.input.right - state.input.left,
@@ -164,19 +186,20 @@ const newGame = () => {
     if (state.input.jumping && state.player.fallSpeed == 0) {
       state.player.fallSpeed -= jumpSpeed;
     }
+
+    // Update player position
     let dy = -state.player.fallSpeed;
     if (dx != 0 || dy != 0 || dz != 0) {
-      const layer = Math.floor(state.player.location.y);
-      const row = Math.floor(state.player.location.z);
-      const col = Math.floor(state.player.location.x);
+      const [playerX, playerY, playerZ] = getCoords(state.player.location);
+      const [col, layer, row] = getIntCoords(state.player.location);
       const collisions = getCollisions(map.blocks, layer, row, col);
-      const xFrac = state.player.location.x - col;
+      const xFrac = playerX - col;
       const xMove = getPosition(xFrac + dx, collisions[2], collisions[3]);
       state.player.location.x = col + xMove;
-      const zFrac = state.player.location.z - row;
+      const zFrac = playerZ - row;
       const zMove = getPosition(zFrac + dz, collisions[0], collisions[1]);
       state.player.location.z = row + zMove;
-      const yFrac = state.player.location.y - layer;
+      const yFrac = playerY - layer;
       const [yMove, isFalling] = getPositionY(xMove, zMove, yFrac + dy, collisions[4]);
       state.player.location.y = layer + yMove;
       if (isFalling) {
@@ -185,6 +208,26 @@ const newGame = () => {
         state.player.fallSpeed = 0;
       }
     }
+
+    // Collect powerups
+    const [col, layer, row] = getIntCoords(state.player.location);
+    const powerup = map.blockInfo[layer][row][col].powerup;
+    if (powerup != 0) {
+      if (powerup == 1) {
+        // Ammo
+        state.player.ammo += 5;
+      }
+      map.blockInfo[layer][row][col].powerup = 0;
+      let idx = map.blockInfo[layer][row][col].attributeBufferIndex;
+      idx *= 6;
+      for (let i = 0; i < 6; i++) {
+        powerupRenderer.typeData[idx + i] = 0;
+      }
+      powerupRenderer.stale = idx;
+      playNote(659);
+    }
+
+    // Update orbs and emitters
     state.orbs.forEach((orb) => {
       orb.position.x += orb.velocity.x;
       orb.position.y += orb.velocity.y;
@@ -212,12 +255,13 @@ const newGame = () => {
     }
 
     // TODO: this is just a demo
-    state.player.health = (Math.sin(timestamp * 0.0005 * 6.28) + 1.0) / 2.0 * 5.0;
+    state.player.health = (Math.sin(timestamp * 0.0005 * 6.28) + 1.0) / 2.0 * state.limits.health;
   };
 
   return {
     state: state,
     update: update,
+    setPowerupRenderer: (r) => {powerupRenderer = r;},
   };
 };
 const newBaddie = (gl, mesh) => {
@@ -374,7 +418,8 @@ const newBaddie = (gl, mesh) => {
   // Things that happen when the baddie dies.
   baddie.explode = (emitterSpawns) => {
     playNote(370);
-    emitterSpawns.push([baddie.location.x, baddie.location.y, baddie.location.z, 5]);
+    const [x, y, z] = getIntCoords(baddie.location);
+    emitterSpawns.push([x, y, z, 5]);
   };
 
 	return baddie;

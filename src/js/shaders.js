@@ -151,4 +151,71 @@ const shaders = {
       }
     `,
   },
+
+  // The shaders used by powerups.
+  powerup: {
+    vertex: `
+      uniform mat4 u_transform;
+      uniform vec3 u_player;
+      uniform float u_time;
+      attribute vec3 a_vtx_pos;
+      attribute vec3 a_mdl_pos;
+      attribute vec2 a_texCoord;
+      attribute float a_type;
+      varying vec3 v_position;
+      varying vec2 v_texCoord;
+
+      void main() {
+        vec3 mdl = a_mdl_pos;
+        mdl.xz += 0.5;
+        mdl.y += 0.2;
+        mdl.y += 0.05 * sin(u_time * 3.14);
+        vec3 delta = u_player - mdl;
+        float a1 = -atan(delta.z, delta.x);
+        float a2 = -atan(-length(delta.xz), delta.y);
+        vec2 ab = vec2(sin(a1), cos(a1));
+        vec2 fg = vec2(sin(a2), cos(a2));
+        mat4 rx = mat4(
+          1, 0, 0, 0,
+          0, fg.x, fg.y, 0,
+          0, -fg.y, fg.x, 0,
+          0, 0, 0, 1
+        );
+        mat4 ry = mat4(
+          ab.x, 0, ab.y, 0,
+          0, 1, 0, 0,
+          -ab.y, 0, ab.x, 0,
+          0, 0, 0, 1
+        );
+        float s = 0.2;
+        mat4 scale = mat4(s, 0, 0, 0, 0, s, 0, 0, 0, 0, s, 0, 0, 0, 0, 1);
+        vec4 pos = scale * ry * rx * vec4(a_vtx_pos, 1) + vec4(mdl, 0);
+        pos.x += 0.01 * u_player.x;
+        vec4 tpos = u_transform * pos;
+        tpos.xyz *= min(a_type, 1.0);
+        v_position = tpos.xyz;
+        v_texCoord = a_texCoord;
+        gl_Position = tpos;
+      }
+    `,
+    fragment: `
+      precision mediump float;
+
+      uniform sampler2D u_palette;
+      uniform sampler2D u_image;
+      uniform float u_filter;
+      varying vec3 v_position;
+      varying vec2 v_texCoord;
+
+      void main() {
+        float n = 3.0;
+        vec3 rgb = texture2D(u_image, v_texCoord).rgb;
+        rgb *= 1.0 - 0.75 * min(max(0.0, v_position.z), 1.0);
+        vec3 xyz = floor(rgb * (n - 0.001));
+        float idx = (xyz.x * n * n + xyz.y * n + xyz.z + 0.5) / (n * n * n);
+        vec3 rgb2 = texture2D(u_palette, vec2(idx, 0.5)).rgb;
+        gl_FragColor = vec4(rgb2 * u_filter + (1.0 - u_filter) * rgb, 1);
+      }
+    `,
+  },
 };

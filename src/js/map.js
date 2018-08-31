@@ -82,8 +82,8 @@ function newSolidLayer(shape1, shape0, blockType){
 }
 
 function makeRamp(k, h0, w0, hw0, hwlim0, gt0, h1, w1, hw1, hwlim1, gt1, h2, w2, h3, w3, rn, rnlim, ramp){
-	if(map.blocks[k][h0][w0] != 0 && ((gt0 && hw0 > hwlim0) || (!gt0 && hw0 < hwlim0)) && 
-			map.blocks[k][h1][w1] == 0 && ((gt1 && hw1 > hwlim1) || (!gt1 && hw1 < hwlim1)) && 
+	if(map.blocks[k][h0][w0] != 0 && ((gt0 && hw0 > hwlim0) || (!gt0 && hw0 < hwlim0)) &&
+			map.blocks[k][h1][w1] == 0 && ((gt1 && hw1 > hwlim1) || (!gt1 && hw1 < hwlim1)) &&
 			map.blocks[k+2][h2][w2] == 0 && map.blocks[k+2][h3][w3] == 0 && rn < rnlim){
 		map.blocks[k][h0][w0] = ramp;
 		map.blocks[k+1][h0][w0] = 0;
@@ -120,7 +120,7 @@ for(var k = 1; k < layers*2+1; k+=2){
 			var rn = Math.random();
 			if(makeRamp(k, h, w, h-1, 1, true, h-1, w, h+2, height-1, false, h+1, w, h+2, w, rn, .1, 6) ||
 				makeRamp(k, h, w, h+1, height-1, false, h+1, w, h-2, 1, true, h-1, w, h-2, w, rn, .2, 8) ||
-				makeRamp(k, h, w, w-1, 1, true, h, w-1, w+2, width-1, false, h, w+1, h, w+2, rn, .3, 9) || 
+				makeRamp(k, h, w, w-1, 1, true, h, w-1, w+2, width-1, false, h, w+1, h, w+2, rn, .3, 9) ||
 				makeRamp(k, h, w, w+1, width-1, false, h, w+1, w-2, 1, true, h, w-1, h, w-2, rn, .4, 7))
 				rampCount++;
 			if(rampCount >= 4) break;
@@ -132,6 +132,7 @@ for(var k = 1; k < layers*2+1; k+=2){
 map.blocks[1][0][1] = 5;
 
 // Initialze block info.
+let i = 0;
 for (let l = 0; l < map.blocks.length; l++) {
   const layer = [];
   for (let r = 0; r < map.blocks[0].length; r++) {
@@ -139,10 +140,16 @@ for (let l = 0; l < map.blocks.length; l++) {
     for (let c = 0; c < map.blocks[0][0].length; c++) {
       // Things that can potentially occupy this block.
       row.push({
-        powerup: null,
+        attributeBufferIndex: i++,
+        powerup: 0,
       });
     }
     layer.push(row);
   }
   map.blockInfo.push(layer);
 }
+
+// TODO: Add powerups; these are just samples (ammo=1)
+map.blockInfo[1][2][2].powerup = 1;
+map.blockInfo[1][4][3].powerup = 1;
+map.blockInfo[1][3][4].powerup = 1;

@@ -130,6 +130,36 @@ const addRampToMesh = (mesh, direction, dx, dy, dz) => {
   ]).forEach(e => mesh.texCoords.push(e));
 };
 
+// Adds a new powerup to a static mesh.
+const addPowerupToMesh = (mesh, dx, dy, dz, type) => {
+  // Vertices
+  const c = 0.5;
+  const vRUF = [+c, +c, 0];
+  const vRDF = [+c, -c, 0];
+  const vLUF = [-c, +c, 0];
+  const vLDF = [-c, -c, 0];
+  flatten([
+    vLDF, vRUF, vLUF,
+    vLDF, vRDF, vRUF,
+  ]).forEach(e => mesh.vertices.push(e));
+
+  // Texture coordinates
+  [
+    0, 1, 1, 0, 0, 0,
+    0, 1, 1, 1, 1, 0,
+  ].forEach(e => mesh.texCoords.push(e));
+
+  // Offsets
+  const position = [dx, dy, dz];
+  flatten([
+    position, position, position,
+    position, position, position,
+  ]).forEach(e => mesh.positions.push(e));
+
+  // Types
+  [type, type, type, type, type, type].forEach(e => mesh.types.push(e));
+};
+
 // Creates a new static mesh renderer.
 const newMeshRenderer = (gl, mesh) => {
   const program = mesh.program;
@@ -147,6 +177,39 @@ const newMeshRenderer = (gl, mesh) => {
   return (transform) => {
     renderer.data.uniform.mat4.transform = transform;
     renderer.render(numPoints);
+  };
+};
+
+// Creates a new powerup mesh renderer.
+const newPowerupRenderer = (gl, mesh) => {
+  const program = mesh.program;
+  const vertexBuffer = uploadBuffer(gl, mesh.vertices);
+  const positionBuffer = uploadBuffer(gl, mesh.positions);
+  const texCoordBuffer = uploadBuffer(gl, mesh.texCoords);
+  const typeBuffer = uploadBuffer(gl, mesh.types);
+
+  const renderer = createRenderer(gl, program);
+  renderer.data.uniform.sampler2D.image = mesh.texture;
+  renderer.data.uniform.sampler2D.palette = mesh.palette;
+  renderer.data.uniform.float.filter = 1;
+  renderer.data.attribute.vec3.vtx_pos = vertexBuffer;
+  renderer.data.attribute.vec3.mdl_pos = positionBuffer;
+  renderer.data.attribute.vec2.texCoord = texCoordBuffer;
+  renderer.data.attribute.float.type = typeBuffer;
+  const numPoints = mesh.vertices.length / 3;
+
+  const render = (transform, timestamp, x, y, z) => {
+    renderer.data.uniform.mat4.transform = transform;
+    renderer.data.uniform.vec3.player = [x, y, z];
+    renderer.data.uniform.float.time = timestamp;
+    renderer.render(numPoints);
+  };
+
+  return {
+    render: render,
+    typeBufferId: typeBuffer,
+    typeData: mesh.types,
+    stale: false,
   };
 };
 
@@ -253,7 +316,7 @@ const setup = () => {
       }
     } else if (!isLocked) {
       game.state.input.pointerLocked = false;
-      playNote(420);
+      playNote(415);
     }
   });
 
@@ -265,6 +328,19 @@ const setup = () => {
     texture: textureId,
     vertices: [],
     texCoords: [],
+    render: null,
+  });
+
+  // Do the same for each powerup
+  const powerupProgram = newProgram(gl, 'powerup');
+  const newPowerupType = (textureId) => ({
+    program: powerupProgram,
+    palette: paletteTexId,
+    texture: textureId,
+    vertices: [],
+    texCoords: [],
+    positions: [],
+    types: [],
     render: null,
   });
 
@@ -286,10 +362,16 @@ const setup = () => {
   }
 
   // Health bar
-  const healthBlueTextureId = uploadTexture(gl, solidTexture(0.5, 0.5, 0.7));
-  const healthRedTextureId = uploadTexture(gl, solidTexture(1, 0, 0));
-  const healthPresent = newQuad(gl, paletteTexId, healthBlueTextureId, 0, 1);
-  const healthMissing = newQuad(gl, paletteTexId, healthRedTextureId, 0, 1);
+  const healthFrontTextureId = uploadTexture(gl, solidTexture(0.5, 0.5, 0.7));
+  const healthBackTextureId = uploadTexture(gl, solidTexture(0.7, 0.0, 0.0));
+  const renderHealthFront = newQuad(gl, paletteTexId, healthFrontTextureId, 0, 1);
+  const renderHealthBack = newQuad(gl, paletteTexId, healthBackTextureId, 0, 1);
+
+  // Ammo bar
+  const ammoFrontTextureId = orbTexture;
+  const ammoBackTextureId = uploadTexture(gl, solidTexture(0.5, 0.5, 0.5));
+  const renderAmmoFront = newQuad(gl, paletteTexId, ammoFrontTextureId, 0, 1);
+  const renderAmmoBack = newQuad(gl, paletteTexId, ammoBackTextureId, 0, 1);
 
   // Crosshairs
   const crosshairTextureId = uploadTexture(gl, solidTexture(0.8, 0.8, 0.8));
@@ -309,10 +391,11 @@ const setup = () => {
     // Ramps (N, E, S, W)
     'ramps': rampBlockType,
   };
+  const powerupMesh = newPowerupType(orbTexture);
   for (let layer = 0; layer < map.blocks.length; layer++) {
     for (let row = 0; row < map.blocks[0].length; row++) {
       for (let col = 0; col < map.blocks[0][0].length; col++) {
-        const idx = map.blocks[layer][row][col];
+        let idx = map.blocks[layer][row][col];
         const isRamp = idx >= 6 && idx <= 9;
         if (staticMeshes.hasOwnProperty(idx) || isRamp) {
           if (isRamp) {
@@ -322,12 +405,16 @@ const setup = () => {
             addBlockToMesh(staticMeshes[idx], col, layer, row);
           }
         }
+        const powerup = map.blockInfo[layer][row][col].powerup;
+        addPowerupToMesh(powerupMesh, col, layer, row, powerup);
       }
     }
   }
   Object.getOwnPropertyNames(staticMeshes).forEach((name) => {
     staticMeshes[name].render = newMeshRenderer(gl, staticMeshes[name]);
   });
+  powerupMesh.renderer = newPowerupRenderer(gl, powerupMesh);
+  game.setPowerupRenderer(powerupMesh.renderer);
 
   let lastTimestamp = 0;
   const render = (timestamp) => {
@@ -401,6 +488,18 @@ const setup = () => {
     telemetry.blend('render_static', performance.now() - time0);
 
     time0 = performance.now();
+    if (powerupMesh.renderer.stale != false) {
+      const offset = powerupMesh.renderer.stale;
+      powerupMesh.renderer.stale = false;
+      gl.bindBuffer(gl.ARRAY_BUFFER, powerupMesh.renderer.typeBufferId);
+      const data = powerupMesh.renderer.typeData.slice(offset, offset + 6);
+      gl.bufferSubData(gl.ARRAY_BUFFER, offset * 4, new Float32Array(data));
+    }
+    const ploc = game.state.player.location;
+    powerupMesh.renderer.render(transform, timestamp * 0.001, ploc.x, ploc.y, ploc.z);
+    telemetry.blend('render_powerup', performance.now() - time0);
+
+    time0 = performance.now();
     baddies.forEach((b)=>{
   		let bt;
   		bt = matmul(transform, translate(
@@ -456,15 +555,28 @@ const setup = () => {
     transform = identity();
     transform = matmul(transform, scale(1 / 2, 1 / 20, 1));
     transform = matmul(transform, translate(0, -19, 0));
-    healthMissing(gl, transform);
-    const healthBarWidth = game.state.player.health / 5;
-    const missing = 5 - game.state.player.health;
+    renderHealthBack(gl, transform);
+    let fraction = game.state.player.health / game.state.limits.health;
     transform = identity();
-    transform = matmul(transform, translate(missing * -0.1, 0, 0));
-    transform = matmul(transform, scale(healthBarWidth / 2, 1 / 20, 1));
-    transform = matmul(transform, translate(0, -19, 0));
-    healthPresent(gl, transform);
+    transform = matmul(transform, translate(-1 / 2, 0, 0));
+    transform = matmul(transform, scale(fraction / 2, 1 / 20, 1));
+    transform = matmul(transform, translate(1, -19, 0));
+    renderHealthFront(gl, transform);
     telemetry.blend('render_health', performance.now() - time0);
+
+    // Ammo bar
+    time0 = performance.now();
+    transform = identity();
+    transform = matmul(transform, scale(1 / 2, 1 / 20, 1));
+    transform = matmul(transform, translate(0, -17, 0));
+    renderAmmoBack(gl, transform);
+    fraction = game.state.player.ammo / game.state.limits.ammo;
+    transform = identity();
+    transform = matmul(transform, translate(-1 / 2, 0, 0));
+    transform = matmul(transform, scale(fraction / 2, 1 / 20, 1));
+    transform = matmul(transform, translate(1, -17, 0));
+    renderAmmoFront(gl, transform);
+    telemetry.blend('render_ammo', performance.now() - time0);
 
     // Crosshairs
     time0 = performance.now();
