@@ -333,108 +333,53 @@ const newBaddie = (gl, mesh) => {
 	addBlockToMesh(mesh, -0.5, -0.5, -0.5);
 	baddie.render = newMeshRenderer(gl, mesh);
 
-	baddie.findFirstChoice = (k, meta) =>{
-		var actions = [[0,0]];
-		while(meta[k][0] != null){
-			actions.push(meta[k][1]);
-			k = meta[k][0];
-		}
-		return actions[actions.length-1];
-	};
-
-	baddie.bfs = (l, r, c, goalr, goalc, blockTypes, ignoreCollision) => {
-		var open = [], closed = [], meta = {};
-		var root = r+'|'+c;
-		meta[root] = [null, null];
-		if(r != goalr || c != goalc)
-			open.push(root);
-		var neighbors = [[-1, 0], [1, 0], [0, -1], [0, 1]]; //up, down, left, right (just like collisions)
-		while (open.length > 0){
-			var rt = open.shift();
-			var i = rt.indexOf('|');
-			r = parseInt(rt.substring(0, i));
-			c = parseInt(rt.substring(i+1));
-			//if(r == null || c == null)
-			//	console.log('r and c shouldnt be null');
-			//stay within boundaries
-			if(l <= 0 || l >= map.blocks.length || r <= 0 || r >= map.blocks[l].length || c <= 0 || c >= map.blocks[l][r].length){
-				closed.push(rt);
-				continue;
-			}
-			//reached goal
-			if(r == goalr && c == goalc){
-				return baddie.findFirstChoice(rt, meta);
-			}
-			//found desired block
-			if(blockTypes.includes(map.blocks[l][r][c])){
-				//console.log('found ramp ' + map.blocks[l][r][c]);
-				return [l, r, c];
-			}
-			if(!ignoreCollision && map.blocks[l][r][c] != 0){
-				closed.push(rt);
-				continue;
-			}
-			var collisions = getCollisions(map.blocks, l, r, c);
-			neighbors.forEach((n, i) => {
-				var k = (r+n[0]) + '|' + (c+n[1]);
-				if(!closed.includes(k) && !open.includes(k) && (ignoreCollision || !collisions[i])){
-					meta[k] = [rt, n];
-					open.push(k);
-				}
-			});
-			closed.push(rt);
-		}
-		return [0,0];
-	};
-
 	baddie.findRamp = (layer, row, col, dl) => {
 		//Find ramp location
-		var lrc = baddie.bfs(layer+dl, row, col, null, null, [6,7,8,9], dl<0);
+		var lrc = bfs(layer+dl, row, col, null, null, [6,7,8,9], dl<0);
 		if(lrc.length == 2) return lrc;//no ramp found
 		//now find the block at the foot of the ramp
-		var r = map.blocks[lrc[0]][lrc[1]][lrc[2]];
-		var dr, dc;
-		if(r == 6){
-			dr = (dl == 0) ? -1: 1;
-			dc = 0;
-		}
-		else if(r == 7){
-			dr = 0;
-			dc = (dl == 0) ? 1: -1;
-		}
-		else if(r == 8){
-			dr = (dl == 0) ? 1: -1;
-			dc = 0;
-		}
-		else if(r == 9){
-			dr = 0;
-			dc = (dl == 0) ? -1: 1;
-		}
+		var drdc = findRampFoot(lrc[0], lrc[1], lrc[2], dl);
+		// var r = map.blocks[lrc[0]][lrc[1]][lrc[2]];
+		// var dr, dc;
+		// if(r == 6){
+			// dr = (dl == 0) ? -1: 1;
+			// dc = 0;
+		// }
+		// else if(r == 7){
+			// dr = 0;
+			// dc = (dl == 0) ? 1: -1;
+		// }
+		// else if(r == 8){
+			// dr = (dl == 0) ? 1: -1;
+			// dc = 0;
+		// }
+		// else if(r == 9){
+			// dr = 0;
+			// dc = (dl == 0) ? -1: 1;
+		// }
 		//else
 		//	console.log('this shouldnt happen. ' + r + ' ' + lrc);
 		//if baddie is at foot of ramp, climb
-		if(row == lrc[1]+dr && col == lrc[2]+dc){
+		if(row == lrc[1]+drdc[0] && col == lrc[2]+drdc[1]){
 			//special logic for ramps.  This should be the only time the function returns null.
 			//if(dl == 0){
-				baddie.shortGoal[0] = dr*-1;
-				baddie.shortGoal[1] = dc*-1;
+				baddie.shortGoal[0] = drdc[0]*-1;
+				baddie.shortGoal[1] = drdc[1]*-1;
 			//}
 			baddie.shortGoal[2] = row + 3 * baddie.shortGoal[0];
 			baddie.shortGoal[3] = col + 3 * baddie.shortGoal[1];
 			baddie.shortGoal[4] = baddie.location.y;
-			baddie.shortGoal[5] = baddie.location.y+2;
-			if(dl < 0)
-				baddie.shortGoal[5] = baddie.location.y-2;
+			baddie.shortGoal[5] = baddie.location.y + (dl == 0) ? 2 : -2;
 			return null;
 		}
 		//else path to foot of ramp
-		return baddie.bfs(layer, row, col, lrc[1]+dr, lrc[2]+dc, [], false);
+		return bfs(layer, row, col, lrc[1]+drdc[0], lrc[2]+drdc[1], [], false);
 	};
 
 	baddie.getGoal = (timestamp, playerLocation, layer, row, col) => {
 		var zx=[0,0];
 		if(layer == Math.floor(playerLocation.y))
-			zx = baddie.bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x), [], false);
+			zx = bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x), [], false);
 		//otherwise, find nearest ramp.  TODO: maybe this needs to be changed to find ramp nearest to player, instead of ramp nearest to baddie?
 		if(zx[0] == 0 && zx[1] == 0 && layer < Math.floor(playerLocation.y))
 			zx = baddie.findRamp(layer, row, col, 0);
