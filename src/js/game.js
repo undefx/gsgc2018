@@ -242,6 +242,7 @@ const newGame = () => {
     const [col, layer, row] = getIntCoords(state.player.location);
     const powerup = map.blockInfo[layer][row][col].powerup;
     if (powerup != powerupTypes.none) {
+      let sound = true;
       if (powerup == powerupTypes.ammo) {
         state.player.ammo = Math.min(state.player.ammo + 5, state.limits.ammo);
       } else if (powerup == powerupTypes.health) {
@@ -251,8 +252,7 @@ const newGame = () => {
         setTimeout(() => audio.playNote(554), 200);
         setTimeout(() => audio.playNote(659), 400);
         goToLevel(state.level + 1, true, 'next level');
-        // No need to finish update.
-        return;
+        sound = false;
       }
       map.blockInfo[layer][row][col].powerup = powerupTypes.none;
       let idx = map.blockInfo[layer][row][col].attributeBufferIndex;
@@ -261,7 +261,9 @@ const newGame = () => {
         powerupRenderer.typeData[idx + i] = powerupTypes.none;
       }
       powerupRenderer.stale = idx;
-      audio.playNote(659);
+      if (sound) {
+        audio.playNote(659);
+      }
     }
 
     // Update orbs and emitters
