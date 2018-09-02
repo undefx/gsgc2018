@@ -318,7 +318,7 @@ const newGame = () => {
         audio.playNote(440);
         setTimeout(() => audio.playNote(370), 200);
         setTimeout(() => audio.playNote(349), 400);
-        goToLevel(state.level, true, 'game over');
+        goToLevel(state.level, true, 'try again');
       } else {
         audio.playNote(466);
       }
