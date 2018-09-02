@@ -87,6 +87,10 @@ const getIntCoords = (obj) => [
   Math.floor(obj.x), Math.floor(obj.y), Math.floor(obj.z)
 ];
 
+const randomFloor = () => {
+	return 1.5 + Math.round(Math.random() * ((map.blocks.length-1)/2-1))*2;
+};
+
 // Initialize a new game.
 const newGame = () => {
   const state = {
@@ -327,7 +331,7 @@ const newBaddie = (gl, mesh, speedMult) => {
 	while(Math.floor(y) == 1 && (zx[0] < 4 || zx[0] < 4)){
 		zx = randomEmptyZX(y, 0);
 	}
-	console.log('y pos: ' + y + ', layers: ' + map.layers);
+	//console.log('y pos: ' + y + ', layers: ' + map.layers);
 	const baddie = {
 		location: {
 			x: zx[1],

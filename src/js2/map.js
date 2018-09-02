@@ -30,10 +30,6 @@ const map = {
   blockInfo: [],
 };
 
-const randomFloor = () => {
-	return 1.5 + Math.round(Math.random() * ((map.blocks.length-1)/2-1))*2;
-};
-
 const findFirstChoice = (k, meta) =>{
 	var actions = [[0,0]];
 	while(meta[k][0] != null){
@@ -104,8 +100,8 @@ const findRampFoot = (l, r, c, dl) => {
 		dr = 0;
 		dc = (dl == 0) ? -1: 1;
 	}
-	else
-		console.log(l + ', ' + r + ', ' + c + ' isnt a ramp!');
+	//else
+	//	console.log(l + ', ' + r + ', ' + c + ' isnt a ramp!');
 	return [dr, dc];
 };
 
@@ -118,11 +114,11 @@ const powerupTypes = {
 };
 
 const randomEmptyZX = (layer, checkPowerup) =>{
-	var x=0,z=0;
-	while(map.blocks[Math.floor(layer)][Math.floor(z)][Math.floor(x)] != 0 || 
-			(checkPowerup && map.blockInfo[Math.floor(layer)][Math.floor(z)][Math.floor(x)].powerup != powerupTypes.none)){
-		z = Math.floor(Math.random() * (map.blocks[0].length-2))+1.5;
-		x = Math.floor(Math.random() * (map.blocks[0][0].length-2))+1.5;
+	var x=0,z=0,y=Math.floor(layer);
+	while(map.blocks[y][Math.floor(z)][Math.floor(x)] != 0){// || 
+			//(checkPowerup && map.blockInfo[Math.floor(layer)][Math.floor(z)][Math.floor(x)].powerup != powerupTypes.none)){
+		z = Math.floor(Math.random() * (map.blocks[y].length-2))+1.5;
+		x = Math.floor(Math.random() * (map.blocks[y][0].length-2))+1.5;
 	}
 	return [z, x];
 };
@@ -236,8 +232,8 @@ map.init = (lvl) => {
 
   // Level indicator block.
   map.blocks[1][0][1] = 5;
-  map.blocks[map.blocks.length - 2][map.height - 2][map.width - 2] = 0;
-  map.blocks[map.blocks.length - 2][map.height - 1][map.width - 2] = 10;
+  //map.blocks[map.blocks.length - 2][map.height - 2][map.width - 2] = 0;
+  //map.blocks[map.blocks.length - 2][map.height - 1][map.width - 2] = 10;
   map.blocks[map.blocks.length - 2][map.height - 2][map.width - 2] = -1;
   
   //make sure level is solveable
@@ -252,8 +248,6 @@ map.init = (lvl) => {
 		  zx = bfs(k, sz, sx, lrc[1]+drdc[0], lrc[2]+drdc[1], [], false, 1);
 	  }
 	  while(zx[0] == 0 && zx[1] == 0){
-		//TODO: found nothing, regenerating level 7
-		console.log("regenerating layer " + k);
 		//regenerate layer
 		map.blocks[k] = newMazeLayer(map.width, map.height, 0.1, 0.15, 4);
 		placeRamps(k);
@@ -269,11 +263,10 @@ map.init = (lvl) => {
 	  sz = lrc[1]+drdc[0]*-2; //next start is at top of next ramp
 	  sx = lrc[2]+drdc[1]*-2;
   }
-  //need to do again in case layer was rebuilt
+  
   map.blocks[1][0][1] = 5;
   map.blocks[map.blocks.length - 2][map.height - 2][map.width - 2] = 0;
   map.blocks[map.blocks.length - 2][map.height - 1][map.width - 2] = 10;
-  map.blocks[map.blocks.length - 2][map.height - 2][map.width - 2] = 0;
   
 	//make lofts
     const ramps = [6,7,8,9];
@@ -309,16 +302,13 @@ map.init = (lvl) => {
       layer.push(row);
     }
     map.blockInfo.push(layer);
+	if(l%2==1){
+		var zx = randomEmptyZX(l);
+		map.blockInfo[l][Math.floor(zx[0])][Math.floor(zx[1])].powerup = powerupTypes.ammo;
+		zx = randomEmptyZX(l);
+		map.blockInfo[l][Math.floor(zx[0])][Math.floor(zx[1])].powerup = powerupTypes.health;
+	}
   }
-
   // Exit indicator
   map.blockInfo[map.blocks.length - 2][map.height - 2][map.width - 2].powerup = powerupTypes.exit;
-
-  //add powerups
-  for(let l = 1; l < map.layers*2+2; l+=2){
-	  var zx = randomEmptyZX(l, 1);
-	  map.blockInfo[l][Math.floor(zx[0])][Math.floor(zx[1])].powerup = powerupTypes.ammo;
-	  zx = randomEmptyZX(l, 1);
-	  map.blockInfo[l][Math.floor(zx[0])][Math.floor(zx[1])].powerup = powerupTypes.health;
-  }
 };
