@@ -170,8 +170,8 @@ const getGameRenderer = (canvas, gl, game, paletteTexId, renderString, renderTex
   const baddieTexture = uploadTexture(gl, solidTexture(0.9, 0.2, 0.2));//lance
   var baddieMesh = newBlockType(baddieTexture);
   var baddies = [];
-  for(var b = 0; b < 3; b++) {
-	  baddies.push(newBaddie(gl, baddieMesh));
+  for(var b = 0; b < game.state.baddieCount; b++) {
+	  baddies.push(newBaddie(gl, baddieMesh, game.state.baddieSpeed));
   }
 
   // Health bar

@@ -11,10 +11,10 @@ const map = {
     z: 1.5,
   },
   
-  height:7,
-  width:7,
+  height:9,
+  width:9,
   layers:0,
-  rampsPerLayer:4,
+  rampsPerLayer:2,
 
   // The direction the player should face when spawned.
   start_direction: Math.PI * 1,
@@ -30,6 +30,10 @@ const map = {
   blockInfo: [],
 };
 
+const randomFloor = () => {
+	return 1.5 + Math.round(Math.random() * ((map.blocks.length-1)/2-1))*2;
+};
+
 const findFirstChoice = (k, meta) =>{
 	var actions = [[0,0]];
 	while(meta[k][0] != null){
@@ -39,7 +43,7 @@ const findFirstChoice = (k, meta) =>{
 	return actions[actions.length-1];
 };
 
-const bfs = (l, r, c, goalr, goalc, blockTypes, ignoreCollision, test) => {
+const bfs = (l, r, c, goalr, goalc, blockTypes, ignoreCollision) => {
 	var open = [], closed = [], meta = {};
 	var root = r+'|'+c;
 	meta[root] = [null, null];
@@ -52,19 +56,16 @@ const bfs = (l, r, c, goalr, goalc, blockTypes, ignoreCollision, test) => {
 		r = parseInt(rt.substring(0, i));
 		c = parseInt(rt.substring(i+1));
 		//found desired block
-		if(blockTypes.includes(map.blocks[l][r][c])){
-			//console.log('found ramp ' + map.blocks[l][r][c]);
-			if(test) console.log('found block type');
-			return [l, r, c];
-		}
 		//stay within boundaries
 		if(l <= 0 || l >= map.blocks.length || r <= 0 || r >= map.blocks[l].length || c <= 0 || c >= map.blocks[l][r].length){
 			closed.push(rt);
 			continue;
 		}
+		if(blockTypes.includes(map.blocks[l][r][c])){
+			return [l, r, c];
+		}
 		//reached goal
 		if(r == goalr && c == goalc){
-			if(test) console.log('found goal');
 			return findFirstChoice(rt, meta);
 		}
 		if(!ignoreCollision && map.blocks[l][r][c] != 0){
@@ -81,7 +82,6 @@ const bfs = (l, r, c, goalr, goalc, blockTypes, ignoreCollision, test) => {
 		});
 		closed.push(rt);
 	}
-	if(test) console.log('found nothing');
 	return [0,0];
 };
 
@@ -117,11 +117,20 @@ const powerupTypes = {
   exit: 3,
 };
 
-map.init = (lvl, slvl) => {
+const randomEmptyZX = (layer, checkPowerup) =>{
+	var x=0,z=0;
+	while(map.blocks[Math.floor(layer)][Math.floor(z)][Math.floor(x)] != 0 || 
+			(checkPowerup && map.blockInfo[Math.floor(layer)][Math.floor(z)][Math.floor(x)].powerup != powerupTypes.none)){
+		z = Math.floor(Math.random() * (map.blocks[0].length-2))+1.5;
+		x = Math.floor(Math.random() * (map.blocks[0][0].length-2))+1.5;
+	}
+	return [z, x];
+};
+
+map.init = (lvl) => {
   map.blocks = [];
   map.blockInfo = [];
-  slvl = slvl || 0;
-  var seed = lvl + slvl;
+  var seed = lvl;
 	function random() {
 		var x = Math.sin(seed++) * 10000;
 		return x - Math.floor(x);
@@ -215,10 +224,6 @@ map.init = (lvl, slvl) => {
 	}
   };
 
-  map.height += (lvl % 4 == 1) ? 1 : 0;
-  map.width += (lvl % 4 == 3) ? 1 : 0;
-  map.layers += (lvl % 3 == 2) ? 1 : 0;
-  map.rampsPerLayer = 4;
   for(let l = 0; l < map.layers+1; l++){
   	map.blocks.push(newSolidLayer(map.width, map.height, l == 0 ? 2 : 3));
   	map.blocks.push(newMazeLayer(map.width, map.height, 0.1, 0.15, 4));
@@ -309,7 +314,11 @@ map.init = (lvl, slvl) => {
   // Exit indicator
   map.blockInfo[map.blocks.length - 2][map.height - 2][map.width - 2].powerup = powerupTypes.exit;
 
-  // TODO: Add powerups; these are just samples.
-  map.blockInfo[1][2][5].powerup = powerupTypes.ammo;
-  map.blockInfo[1][5][2].powerup = powerupTypes.health;
+  //add powerups
+  for(let l = 1; l < map.layers*2+2; l+=2){
+	  var zx = randomEmptyZX(l, 1);
+	  map.blockInfo[l][Math.floor(zx[0])][Math.floor(zx[1])].powerup = powerupTypes.ammo;
+	  zx = randomEmptyZX(l, 1);
+	  map.blockInfo[l][Math.floor(zx[0])][Math.floor(zx[1])].powerup = powerupTypes.health;
+  }
 };

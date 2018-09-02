@@ -95,6 +95,8 @@ const newGame = () => {
     renderFuncGen: null,
     renderFunc: null,
     level: 1,
+	baddieCount: 2,
+	baddieSpeed: .9,
     limits: {
       health: 3,
       ammo: 25,
@@ -163,6 +165,13 @@ const newGame = () => {
   const goToLevel = (lvl, delay, status) => {
     state.levelStatus = status;
     const changeLevel = () => {
+	  state.baddieCount += (lvl % 5 == 3) ? 1 : 0;	  
+	  state.baddieSpeed += .02;
+	  map.height += (lvl % 4 == 1) ? 1 : 0;
+	  map.width += (lvl % 4 == 3) ? 1 : 0;
+	  map.layers += (lvl % 3 == 2) ? 1 : 0;
+	  map.rampsPerLayer = Math.max(2, Math.floor(map.height/6));
+	  
       map.init(lvl);
       state.levelStatus = null;
       state.level = lvl;
@@ -305,7 +314,7 @@ const newGame = () => {
         audio.playNote(440);
         setTimeout(() => audio.playNote(370), 200);
         setTimeout(() => audio.playNote(349), 400);
-        goToLevel(1, true, 'game over');
+        goToLevel(state.level, true, 'game over');
       } else {
         audio.playNote(466);
       }
@@ -313,21 +322,22 @@ const newGame = () => {
     goToLevel: goToLevel,
   };
 };
-const newBaddie = (gl, mesh) => {
-	var x=0,z=0;
-	while(map.blocks[1][Math.floor(z)][Math.floor(x)] != 0){
-		x = Math.floor(Math.random() * (map.blocks[0].length-2))+1.5;
-		z = Math.floor(Math.random() * (map.blocks[0].length-2))+1.5;
+const newBaddie = (gl, mesh, speedMult) => {
+	var y = randomFloor(), zx=randomEmptyZX(y, 0);
+	while(Math.floor(y) == 1 && (zx[0] < 4 || zx[0] < 4)){
+		zx = randomEmptyZX(y, 0);
 	}
+	console.log('y pos: ' + y + ', layers: ' + map.layers);
 	const baddie = {
 		location: {
-			x: x,
-			y: 1.5,
-			z: z,
+			x: zx[1],
+			y: y,
+			z: zx[0],
 		  },
 		hitTime : 0,
     hitBox: 0.25,
     health: 3,
+	speedMult: speedMult
 	};
 
 	addBlockToMesh(mesh, -0.5, -0.5, -0.5);
@@ -339,26 +349,6 @@ const newBaddie = (gl, mesh) => {
 		if(lrc.length == 2) return lrc;//no ramp found
 		//now find the block at the foot of the ramp
 		var drdc = findRampFoot(lrc[0], lrc[1], lrc[2], dl);
-		// var r = map.blocks[lrc[0]][lrc[1]][lrc[2]];
-		// var dr, dc;
-		// if(r == 6){
-			// dr = (dl == 0) ? -1: 1;
-			// dc = 0;
-		// }
-		// else if(r == 7){
-			// dr = 0;
-			// dc = (dl == 0) ? 1: -1;
-		// }
-		// else if(r == 8){
-			// dr = (dl == 0) ? 1: -1;
-			// dc = 0;
-		// }
-		// else if(r == 9){
-			// dr = 0;
-			// dc = (dl == 0) ? -1: 1;
-		// }
-		//else
-		//	console.log('this shouldnt happen. ' + r + ' ' + lrc);
 		//if baddie is at foot of ramp, climb
 		if(row == lrc[1]+drdc[0] && col == lrc[2]+drdc[1]){
 			//special logic for ramps.  This should be the only time the function returns null.
@@ -369,7 +359,7 @@ const newBaddie = (gl, mesh) => {
 			baddie.shortGoal[2] = row + 3 * baddie.shortGoal[0];
 			baddie.shortGoal[3] = col + 3 * baddie.shortGoal[1];
 			baddie.shortGoal[4] = baddie.location.y;
-			baddie.shortGoal[5] = baddie.location.y + (dl == 0) ? 2 : -2;
+			baddie.shortGoal[5] = baddie.location.y + ((dl == 0) ? 2 : -2);
 			return null;
 		}
 		//else path to foot of ramp
@@ -381,7 +371,7 @@ const newBaddie = (gl, mesh) => {
 		if(layer == Math.floor(playerLocation.y))
 			zx = bfs(layer, row, col, Math.floor(playerLocation.z), Math.floor(playerLocation.x), [], false);
 		//otherwise, find nearest ramp.  TODO: maybe this needs to be changed to find ramp nearest to player, instead of ramp nearest to baddie?
-		if(zx[0] == 0 && zx[1] == 0 && layer < Math.floor(playerLocation.y))
+		if(zx[0] == 0 && zx[1] == 0)// && layer < Math.floor(playerLocation.y)) //try going up
 			zx = baddie.findRamp(layer, row, col, 0);
 		if(zx != null && zx[0] == 0 && zx[1] == 0)
 			zx = baddie.findRamp(layer, row, col, -1);
@@ -410,8 +400,8 @@ const newBaddie = (gl, mesh) => {
 				//baddie.shortGoal[4] = null;
 			}
 		}
-		baddie.location.x += baddie.shortGoal[1] * dt;
-		baddie.location.z += baddie.shortGoal[0] * dt;
+		baddie.location.x += baddie.shortGoal[1] * dt * baddie.speedMult;
+		baddie.location.z += baddie.shortGoal[0] * dt * baddie.speedMult;
 		//decide if any vertical movement is needed
 		if(baddie.shortGoal[4] != null){
 			//dividing by 3 wasn't getting them quite high enough, causign a bug.
